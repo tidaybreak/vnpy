@@ -130,6 +130,8 @@ class Exchange(Enum):
     # Special Function
     LOCAL = "LOCAL"         # For local generated data
 
+    BINANCE = "BINANCE"
+
 
 class Currency(Enum):
     """
