@@ -9,10 +9,10 @@ from quant.units import get_symbol_overview, report_excel_xlsx
 from quant.vnpy.app.cta_strategy.backtestingEx import BacktestingEngineEx
 from datetime import date, datetime
 
-from vnpy.app.cta_strategy.backtesting import (
+from vnpy_ctastrategy.backtesting import (
     OptimizationSetting
 )
-from vnpy.app.cta_strategy.base import (
+from vnpy_ctastrategy.base import (
     BacktestingMode
 )
 
@@ -135,7 +135,7 @@ if __name__ == '__main__':
         size=size,
         pricetick=pricetick,
         capital=capital,
-        inverse=False,
+        #inverse=False,
         mode=mode
     )
 

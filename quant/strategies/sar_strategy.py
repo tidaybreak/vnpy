@@ -30,7 +30,7 @@ class SarStrategy(CtaTemplate):
     sar_maximum = 0.2  #
     rsi_length = 14
     # 参数-开平仓
-    position_ratio = 1  # 下单仓位，利用凯利公式？
+    position_ratio = 1  # 下单仓位，利用凯利公式？ 大于1表示绝对值
     slippage = 0.001         # 滑点
     open_eq_sar_step = 2  # 开仓-等于指定sar步数  [关闭=0]     思想：开仓主指标
     open_lt_rsi = 58  # 开仓-小于指定rsi时  [关闭=0]       思想：超买时不开仓
@@ -180,6 +180,8 @@ class SarStrategy(CtaTemplate):
     # ----------------------------------------------------------------------
     def on_stop(self):
         """停止策略（必须由用户继承实现）"""
+        #if len(self.cta_engine.trades) % 2 == 1:
+        #    self.cta_engine.trades.popitem()
         self.my_log(u'策略停止')
         self.put_event()
         if self.open_buy_price > 0.0:
@@ -255,8 +257,10 @@ class SarStrategy(CtaTemplate):
         # 当前无仓位，发送开仓委托
         if self.my_pos(bar) == 0:
             if open_signal:
-                use_cash = self.my_available_cash() * self.position_ratio
-                use_cash = 1000
+                if self.position_ratio <= 1:
+                    use_cash = self.my_available_cash() * self.position_ratio
+                else:
+                    use_cash = self.position_ratio
                 fixed_size = (use_cash / (bar.close_price * (1 + self.slippage)))
                 self.buy(bar.close_price * (1 + self.slippage), fixed_size)
                 self.open_tmp_bar = bar
@@ -337,7 +341,7 @@ class SarStrategy(CtaTemplate):
             # 盈亏率
             real_sell_price = trade.price * (1.0 - self.cta_engine.rate)
             real_buy_price = self.open_buy_price * (1.0 + self.cta_engine.rate)
-            spread = (real_sell_price - real_buy_price) / real_sell_price
+            spread = (real_sell_price - real_buy_price) / real_buy_price
             profit_loss_spread = [spread, "008000"]
             if spread < 0.0:
                 profit_loss_spread = [spread, "DC143C"]

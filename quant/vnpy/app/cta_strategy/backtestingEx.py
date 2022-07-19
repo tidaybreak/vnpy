@@ -20,6 +20,14 @@ from vnpy_ctastrategy.template import CtaTemplate
 from threading import Lock
 from multiprocessing import Pool,Lock,Manager
 from quant.units import bool_color
+from pandas import DataFrame, Series
+
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+
+import pytz
+utc=pytz.UTC
+
 
 pd.set_option('mode.chained_assignment', None)
 
@@ -109,7 +117,7 @@ class BacktestingEngineEx(BacktestingEngine):
         history_data = copy.deepcopy(self.history_data)
         self.output(f"历史数据加载完成，数据量：{len(self.history_data)}")
 
-    def run_backtesting(self):
+    def run_backtesting_x(self):
         """"""
         if self.mode == BacktestingMode.BAR:
             func = self.new_bar
@@ -277,10 +285,11 @@ class BacktestingEngineEx(BacktestingEngine):
 
         return result_values
 
-    def calculate_statistics_new(self, start=None, end=None):
+    def calculate_statistics_all(self, start=None, end=None):
         # 区间推进
         interval_delta = INTERVAL_DELTA_MAP[self.interval]
-        def_stat = self.calculate_result_new()
+        #def_stat = self.calculate_statistics()
+        def_stat = self.calculate_statistics_plus()
         result_def_stat = [[['指标', 'FFA500', 20], '值'],
                            ["时间段", f"{start.strftime('%Y-%m-%d')} - {end.strftime('%Y-%m-%d')}"]]
         for key in def_stat:
@@ -295,10 +304,11 @@ class BacktestingEngineEx(BacktestingEngine):
         def calculate_result(stats, values):
             for k, v in stats.items():
                 if k == '总收益率':
-                    if float(v.replace('%', '')) < 0:
-                        v = [v, "DC143C"]
-                    else:
-                        v = [v, ""]
+                    v = [v, ""]
+                    #if float(v.replace('%', '')) < 0:
+                    #    v = [v, "DC143C"]
+                    #else:
+                    #    v = [v, ""]
                 values += [v]
             return values
         while True:
@@ -309,16 +319,60 @@ class BacktestingEngineEx(BacktestingEngine):
                 stat_end = end
 
             values = [start, stat_end]
-            stats = self.calculate_result_new(start, stat_end)
+            self.calculate_result_by_date(start, stat_end)
+            stats = self.calculate_statistics_plus()
             result_end_time_stat += [calculate_result(stats, values)]
 
             if stat_end - start > interval_delta * 365:
                 values = [stat_end - interval_delta * 365, stat_end]
-                stats = self.calculate_result_new(stat_end - interval_delta * 365, stat_end)
+                self.calculate_result_by_date(stat_end - interval_delta * 365, stat_end)
+                stats = self.calculate_statistics_plus()
                 result_move_time_stat += [calculate_result(stats, values)]
         return def_stat, result_def_stat, result_end_time_stat, result_move_time_stat
 
-    def calculate_result_new(self, start=None, end=None):
+    def calculate_statistics_plus(self, start=None, end=None):
+        translate: dict = {
+            "start_date": "首个交易日",
+            "end_date": "最后交易日",
+            "total_days": "总交易日",
+            "profit_days": "盈利交易日",
+            "loss_days": "亏损交易日",
+            "capital": "起始资金",
+            "end_balance": "结束资金",
+            "max_drawdown": "最大回撤(百分比最大回撤时",
+            "max_ddpercent": "百分比最大回撤",
+            "max_drawdown_duration": "最长回撤天数",
+            "total_net_pnl": "总盈亏",
+            "daily_net_pnl": "日均盈亏",
+            "total_commission": "总手续费",
+            "daily_commission": "日均手续费",
+            "total_slippage": "总滑点",
+            "daily_slippage": "日均滑点",
+            "total_turnover": "总成交金额",
+            "daily_turnover": "日均成交金额",
+            "total_trade_count": "总成交笔数",
+            "daily_trade_count": "日均成交笔数",
+            "total_return": "总收益率",
+            "annual_return": "年化收益",
+            "daily_return": "日均收益率",
+            "return_std": "收益标准差",
+            "sharpe_ratio": "Sharpe Ratio",
+            "return_drawdown_ratio": "收益回撤比",
+        }
+        # statistics = dict()
+        self.calculate_result_by_date(start, end)
+        statistics = self.calculate_statistics()
+
+        statistics_new = dict()
+        for ent in statistics:
+            if ent in translate:
+                statistics_new[translate[ent]] = statistics[ent]
+
+        statistics2 = self.calculate_statistics_by_time(start, end)
+
+        return statistics_new
+
+    def calculate_statistics_by_time(self, start=None, end=None):
         """
         Calculate trade result from increment
         """
@@ -445,7 +499,7 @@ class BacktestingEngineEx(BacktestingEngine):
                 base_df["acum_trade_amount"] = base_df.apply(get_acum_trade_amount, axis=1)
 
                 # Select row data with net pos equil to zero
-                base_df = base_df.dropna()
+                #base_df = base_df.dropna()
 
                 trade_df = pd.DataFrame()
                 trade_df["close_direction"] = base_df["direction"]
@@ -465,7 +519,7 @@ class BacktestingEngineEx(BacktestingEngine):
                 trade_df["slipping"] = trade_df["volume"] * self.size * self.slippage
                 trade_df["net_pnl"] = trade_df["pnl"] - \
                                       trade_df["commission"] - trade_df["slipping"]
-
+                # commission 佣金  slipping 滑点
                 # result = calculate_base_net_pnl(trade_df, capital)
                 df = trade_df
                 df["acum_pnl"] = df["net_pnl"].cumsum()
@@ -484,6 +538,10 @@ class BacktestingEngineEx(BacktestingEngine):
                 df["ddpercent"] = df["drawdown"] / df["highlevel"] * 100
 
                 df.reset_index(drop=True, inplace=True)
+
+                total_days: int = len(df)
+                profit_days: int = len(df[df["net_pnl"] > 0])
+                loss_days: int = len(df[df["net_pnl"] < 0])
 
                 # result
                 end_balancev = 0
@@ -515,6 +573,7 @@ class BacktestingEngineEx(BacktestingEngine):
                 win_loss_pnl_ratio = - win_pnl_medio / loss_pnl_medio
 
                 total_return = (end_balance / capital - 1) * 100
+                annual_return: float = total_return / total_days * self.annual_days
                 return_drawdown_ratio = 0
                 if max_ddpercent > 0:
                     return_drawdown_ratio = -total_return / max_ddpercent
@@ -548,47 +607,25 @@ class BacktestingEngineEx(BacktestingEngine):
 
         return statistics
 
-    def calculate_result(self):
-        """"""
-        self.output("开始计算逐日盯市盈亏")
-
-        if not self.trades:
-            self.output("成交记录为空，无法计算")
-            return
-
-        # Add trade data into daily reuslt.
-        for trade in self.trades.values():
-            d = trade.datetime.date()
-            daily_result = self.daily_results[d]
-            daily_result.add_trade(trade)
-
-        # Calculate daily result by iteration.
-        pre_close = 0
-        start_pos = 0
-
-        for daily_result in self.daily_results.values():
-            daily_result.calculate_pnl(
-                pre_close,
-                start_pos,
-                self.size,
-                self.rate,
-                self.slippage
-               # self.inverse
-            )
-
-            pre_close = daily_result.close_price
-            start_pos = daily_result.end_pos
-
+    def calculate_result_by_date(self, start=None, end=None):
         # Generate dataframe
         results = defaultdict(list)
-
+        if start:
+            start = start.replace(tzinfo=None)
+        if end:
+            end = end.replace(tzinfo=None)
         for daily_result in self.daily_results.values():
-            if self.daily_dfs and daily_result.date in self.daily_dfs:
-                self.daily_dfs[daily_result.date] = DataFrame.from_dict(results).set_index("date")
+            # 区间交易记录
+            d = datetime.combine(daily_result.date, datetime.min.time())
+            if (start and end) and (d < start or d > end):
+                continue
+            # if self.daily_dfs and daily_result.date in self.daily_dfs:
+            #     self.daily_dfs[daily_result.date] = DataFrame.from_dict(results).set_index("date")
             for key, value in daily_result.__dict__.items():
                 results[key].append(value)
 
-        self.daily_df = DataFrame.from_dict(results).set_index("date")
+        if len(results) > 0:
+            self.daily_df = DataFrame.from_dict(results).set_index("date")
 
         self.output("逐日盯市盈亏计算完成")
         return self.daily_df
@@ -604,6 +641,51 @@ class BacktestingEngineEx(BacktestingEngine):
             if s >= self.end:
                 s = self.end
             self.daily_dfs[s.date()] = []
+
+    def show_chart(self, df: DataFrame = None, safe_path=None) -> None:
+        """"""
+        # Check DataFrame input exterior
+        if df is None:
+            df: DataFrame = self.daily_df
+
+        # Check for init DataFrame
+        if df is None:
+            return
+
+        fig = make_subplots(
+            rows=4,
+            cols=1,
+            subplot_titles=["Balance", "Drawdown", "Daily Pnl", "Pnl Distribution"],
+            vertical_spacing=0.06
+        )
+
+        balance_line = go.Scatter(
+            x=df.index,
+            y=df["balance"],
+            mode="lines",
+            name="Balance"
+        )
+
+        drawdown_scatter = go.Scatter(
+            x=df.index,
+            y=df["drawdown"],
+            fillcolor="red",
+            fill='tozeroy',
+            mode="lines",
+            name="Drawdown"
+        )
+        pnl_bar = go.Bar(y=df["net_pnl"], name="Daily Pnl")
+        pnl_histogram = go.Histogram(x=df["net_pnl"], nbinsx=100, name="Days")
+
+        fig.add_trace(balance_line, row=1, col=1)
+        fig.add_trace(drawdown_scatter, row=2, col=1)
+        fig.add_trace(pnl_bar, row=3, col=1)
+        fig.add_trace(pnl_histogram, row=4, col=1)
+
+        fig.update_layout(height=1000, width=1000)
+        if safe_path:
+            fig.write_image(safe_path + 'fig.png', scale=10)
+        fig.show()
 
 
 def optimizeEx(
@@ -658,7 +740,7 @@ def optimizeEx(
 
     # statistics = engine.calculate_statistics(output=False)
 
-    statistics, result_def_stat, result_end_time_stat, result_move_time_stat = engine.calculate_statistics_new(start, end)
+    statistics, result_def_stat, result_end_time_stat, result_move_time_stat = engine.calculate_statistics_all(start, end)
 
     # target_value = statistics[target_name]
 
@@ -695,3 +777,4 @@ def optimizeEx(
 
     return (result_move_time, result_end_time)
     # return (str(setting), target_value, statistics)
+
