@@ -1,6 +1,6 @@
 from vnpy.trader.constant import Direction
 
-from vnpy.app.cta_strategy import (
+from vnpy_ctastrategy import (
     CtaTemplate,
     StopOrder,
     TickData,

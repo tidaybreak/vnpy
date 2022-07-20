@@ -285,11 +285,10 @@ class BacktestingEngineEx(BacktestingEngine):
 
         return result_values
 
-    def calculate_statistics_all(self, start=None, end=None):
+    def calculate_statistics_all(self, start=None, end=None, chart_path=None):
         # 区间推进
         interval_delta = INTERVAL_DELTA_MAP[self.interval]
-        #def_stat = self.calculate_statistics()
-        def_stat = self.calculate_statistics_plus()
+        def_stat = self.calculate_statistics_plus(chart_path=chart_path)
         result_def_stat = [[['指标', 'FFA500', 20], '值'],
                            ["时间段", f"{start.strftime('%Y-%m-%d')} - {end.strftime('%Y-%m-%d')}"]]
         for key in def_stat:
@@ -330,7 +329,7 @@ class BacktestingEngineEx(BacktestingEngine):
                 result_move_time_stat += [calculate_result(stats, values)]
         return def_stat, result_def_stat, result_end_time_stat, result_move_time_stat
 
-    def calculate_statistics_plus(self, start=None, end=None):
+    def calculate_statistics_plus(self, start=None, end=None, chart_path=None):
         translate: dict = {
             "start_date": "首个交易日",
             "end_date": "最后交易日",
@@ -362,13 +361,27 @@ class BacktestingEngineEx(BacktestingEngine):
         # statistics = dict()
         self.calculate_result_by_date(start, end)
         statistics = self.calculate_statistics()
+        if chart_path:
+            self.show_chart(safe_path=chart_path + 'fig1.png')
 
         statistics_new = dict()
         for ent in statistics:
             if ent in translate:
                 statistics_new[translate[ent]] = statistics[ent]
 
-        statistics2 = self.calculate_statistics_by_time(start, end)
+        statistics2, df = self.calculate_statistics_by_time(start, end)
+        for ent in statistics2:
+            if ent in ["总成交次数",
+                       "盈利成交次数",
+                       "亏损成交次数",
+                       "胜率",
+                       "盈亏比",
+                       "平均每笔盈亏",
+                       "平均持仓小时",
+                       "平均每笔手续费"]:
+                statistics_new["<" + ent] = statistics2[ent]
+        if chart_path:
+            self.show_chart(df=df, safe_path=chart_path + 'fig2.png')
 
         return statistics_new
 
@@ -401,7 +414,7 @@ class BacktestingEngineEx(BacktestingEngine):
         loss_amount = 0
         loss_pnl_medio = 0
         loss_duration_medio = 0
-
+        trade_df = pd.DataFrame()
         if len(self.trades) > 0:
             if start and end:
                 start = start.replace(tzinfo=timezone('Asia/Shanghai'))
@@ -499,9 +512,9 @@ class BacktestingEngineEx(BacktestingEngine):
                 base_df["acum_trade_amount"] = base_df.apply(get_acum_trade_amount, axis=1)
 
                 # Select row data with net pos equil to zero
-                #base_df = base_df.dropna()
+                base_df = base_df.dropna()
 
-                trade_df = pd.DataFrame()
+
                 trade_df["close_direction"] = base_df["direction"]
                 trade_df["close_time"] = base_df["current_time"]
                 trade_df["close_price"] = base_df["price"]
@@ -605,7 +618,7 @@ class BacktestingEngineEx(BacktestingEngine):
         statistics["亏损交易均值"] = f"{loss_pnl_medio:,.2f}"
         statistics["亏损持仓小时"] = f"{loss_duration_medio:,.2f}"
 
-        return statistics
+        return statistics, trade_df
 
     def calculate_result_by_date(self, start=None, end=None):
         # Generate dataframe
@@ -652,10 +665,15 @@ class BacktestingEngineEx(BacktestingEngine):
         if df is None:
             return
 
+        max_window = 100
+        merge_window = 0
+        if len(df["net_pnl"]) > max_window:
+            merge_window = int(len(df["net_pnl"]) / max_window)
+
         fig = make_subplots(
             rows=4,
             cols=1,
-            subplot_titles=["Balance", "Drawdown", "Daily Pnl", "Pnl Distribution"],
+            subplot_titles=["Balance", "Drawdown", "Daily Pnl Merge:" + str(merge_window), "Pnl Distribution"],
             vertical_spacing=0.06
         )
 
@@ -674,6 +692,11 @@ class BacktestingEngineEx(BacktestingEngine):
             mode="lines",
             name="Drawdown"
         )
+
+        if merge_window > 1:
+            df["net_pnl"] = df["net_pnl"].rolling(window=merge_window, min_periods=1).sum()
+            df["net_pnl"] = df["net_pnl"][[(i + 1) % merge_window == 0 for i in range(len(df["net_pnl"]))]]
+            df = df.dropna()
         pnl_bar = go.Bar(y=df["net_pnl"], name="Daily Pnl")
         pnl_histogram = go.Histogram(x=df["net_pnl"], nbinsx=100, name="Days")
 
@@ -684,8 +707,8 @@ class BacktestingEngineEx(BacktestingEngine):
 
         fig.update_layout(height=1000, width=1000)
         if safe_path:
-            fig.write_image(safe_path + 'fig.png', scale=10)
-        fig.show()
+            fig.write_image(safe_path, scale=10)
+        #fig.show()
 
 
 def optimizeEx(

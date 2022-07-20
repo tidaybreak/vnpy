@@ -1,4 +1,4 @@
-from vnpy.app.cta_strategy import (
+from vnpy_ctastrategy import (
     CtaTemplate,
     BarGenerator,
     TradeData
@@ -6,7 +6,7 @@ from vnpy.app.cta_strategy import (
 
 from quant.vnpy.trader.utilityEx import ArrayManagerEx
 from vnpy.trader.constant import Direction
-from vnpy.app.cta_strategy.backtesting import BacktestingEngine
+from vnpy_ctastrategy.backtesting import BacktestingEngine
 from vnpy.trader.constant import Interval
 
 TIMER_WAITING_INTERVAL = 30

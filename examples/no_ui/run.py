@@ -61,6 +61,7 @@ def run_child():
 
     event_engine = EventEngine()
     main_engine = MainEngine(event_engine)
+
     main_engine.add_gateway(CtpGateway)
     cta_engine = main_engine.add_app(CtaStrategyApp)
     main_engine.write_log("主引擎创建成功")

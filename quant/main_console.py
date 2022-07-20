@@ -8,12 +8,19 @@ from vnpy.event import EventEngine
 from vnpy.trader.setting import SETTINGS
 from quant.vnpy.trader.engineEx import MainEngineEx
 
-from quant.vnpy.gateway.binance.binance_gateway_ex import BinanceGatewayEx  # 现货
-from vnpy.gateway.binances import BinancesGateway  # 合约
+from vnpy_binance import (
+    BinanceSpotGateway,
+    BinanceUsdtGateway,
+    BinanceInverseGateway
+)
+
+from vnpy_ctastrategy import CtaStrategyApp
+from quant.vnpy.gateway.binance.binance_gateway_ex import BinanceSpotGatewayEx  # 现货
+#from vnpy.gateway.binances import BinancesGateway  # 合约
 
 from quant.vnpy.app.cta_strategy import CtaStrategyAppEx
 
-from vnpy.app.cta_strategy.base import EVENT_CTA_LOG
+from vnpy_ctastrategy.base import EVENT_CTA_LOG
 
 from vnpy.trader.utility import load_json
 
@@ -62,33 +69,36 @@ def run_child(currency):
     Running in the child process.
     """
     SETTINGS["log.file"] = True
+    gateway_name = 'binance'
 
     event_engine = EventEngine()
 
     main_engine = MainEngineEx(event_engine)
 
-    gateway = main_engine.add_gateway(BinanceGatewayEx)
-    main_engine.add_gateway(BinancesGateway)
+    main_engine.add_gateway(BinanceSpotGateway, gateway_name=gateway_name)
+    # gateway = main_engine.add_gateway(BinanceUsdtGateway)
+    # gateway = main_engine.add_gateway(BinanceInverseGateway)
+
     cta_engine = main_engine.add_app(CtaStrategyAppEx)
-    main_engine.add_app(CtaStrategyAppEx)
+    # main_engine.add_app(CtaStrategyAppEx)
 
     log_engine = main_engine.get_engine("log")
     event_engine.register(EVENT_CTA_LOG, log_engine.process_log_event)
     main_engine.write_log("注册日志事件监听")
 
-    filename: str = f"connect_{gateway.gateway_name.lower()}.json"
+    filename: str = f"connect_{gateway_name}.json"
     loaded_setting = load_json(filename)
-    main_engine.connect(loaded_setting, gateway.gateway_name)
+    main_engine.connect(loaded_setting, gateway_name)
 
-    sleep(10)
+    main_engine.write_log("sleep10等待connect连接")
+    #sleep(10)
     vt_symbol = currency
     cta_engine.setting_filename = f"cta_strategy_setting_{vt_symbol}.json"
     cta_engine.data_filename = f"cta_strategy_data_{vt_symbol}.json"
     cta_engine.init_engine()
     main_engine.write_log("CTA策略初始化完成")
 
-    cta_engine.init_all_strategies()
-    sleep(60)  # Leave enough time to complete strategy initialization
+    cta_engine.init_all_strategies()    # 异步 SarStrategy.on_init -> load_bar
     main_engine.write_log("CTA策略全部初始化")
 
     cta_engine.start_all_strategies()

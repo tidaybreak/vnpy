@@ -23,7 +23,8 @@ from vnpy_ctastrategy.base import (
     StopOrderStatus,
     INTERVAL_DELTA_MAP
 )
-
+from vnpy_ctastrategy.template import CtaTemplate
+from time import sleep
 
 STOP_STATUS_MAP = {
     Status.SUBMITTING: StopOrderStatus.WAITING,
@@ -44,7 +45,7 @@ class CtaEngineEx(CtaEngine):
     def __init__(self, main_engine: MainEngine, event_engine: EventEngine):
         super().__init__(main_engine, event_engine)
 
-    def load_bar(
+    def load_bar2(
             self,
             vt_symbol: str,
             days: int,
@@ -54,6 +55,7 @@ class CtaEngineEx(CtaEngine):
     ):
         """"""
         symbol, exchange = extract_vt_symbol(vt_symbol)
+        #end: datetime = datetime.now(LOCAL_TZ)
         end = datetime.now(get_localzone())
         start = end - timedelta(days)
         # ti 0点触发
@@ -104,3 +106,16 @@ class CtaEngineEx(CtaEngine):
             # if bar.datetime.day == 11 and bar.datetime.hour == 7 and bar.datetime.minute == 59:
             #     tmp_bar = bar
             callback(bar)
+
+    def start_all_strategies(self) -> None:
+        """
+        """
+        for strategy_name in self.strategies.keys():
+            # 等待load_bar完成
+            while True:
+                strategy: CtaTemplate = self.strategies[strategy_name]
+                if not strategy.inited:
+                    sleep(1)
+                else:
+                    break
+            self.start_strategy(strategy_name)

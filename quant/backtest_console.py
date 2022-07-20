@@ -27,8 +27,8 @@ def run(currency, setting, rate, capital):
     start = data.start
     end = data.end
     # 日要从8点开始
-    # start = datetime(2018, 9, 6, 8) - interval_delta * 30
-    # end = datetime(2019, 9, 6, 8)
+    #start = datetime(2018, 9, 6, 8) - interval_delta * 30
+    #end = datetime(2021, 7, 6, 8)
     engine.set_parameters(
         vt_symbol=symbol.lower() + ".BINANCE",
         # vt_symbol="xmrusdt.BINANCE",  # 现货的数据
@@ -51,11 +51,13 @@ def run(currency, setting, rate, capital):
     # for ent in engine.daily_dfs:
     #     engine.daily_df = engine.daily_dfs[ent]
     #     statistics_op[ent] = engine.calculate_statistics(output=False)
-    engine.calculate_statistics()  # 计算一些统计指标
-    engine.show_chart(safe_path="/home/data/docker-volume/nginx-php/html/www.tiham.com/cache/")  # 绘制图表 https://tiham.com/cache/fig.png
+    # engine.calculate_statistics()  # 计算一些统计指标
 
     # 区间推进统计
-    def_stat, result_def_stat, result_end_time_stat, result_move_time_stat = engine.calculate_statistics_all(start, end)
+    chart_path = "/home/data/docker-volume/nginx-php/html/www.tiham.com/cache/"
+    def_stat, result_def_stat, result_end_time_stat, result_move_time_stat = engine.calculate_statistics_all(start,
+                                                                                                             end,
+                                                                                                             chart_path=chart_path)
 
     # 参数
     str_parameter = []
@@ -88,19 +90,19 @@ def run(currency, setting, rate, capital):
 
 if __name__ == '__main__':
     currency = ['btc']
-    rate = 1.0 / 1000
-    capital = 100
+    rate = 1.0 / 1000   # 手续费
+    capital = 200       # 起始资金
 
     setting = dict()
     setting["btc"] = {
         "class_name": "SarStrategy",
         "interval": "d",
-        "seg_size": 30,
+        "seg_size": 30,         # 1个月后交易
         "sar_acceleration": 0.02,
         "sar_maximum": 0.2,
         "rsi_length": 14,
-        "position_ratio": 100,
-        "slippage": 0.001,
+        "position_ratio": 100,  # 每次下100刀
+        "slippage": 0.001,      # 滑点
         "open_eq_sar_step": 1,
         "open_lt_rsi": 0,  # [20, 1, 90] 0
         "open_gt_ema": 0,  # [0, 1, 30] 2

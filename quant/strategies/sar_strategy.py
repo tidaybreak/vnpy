@@ -106,14 +106,16 @@ class SarStrategy(CtaTemplate):
         if isinstance(self.cta_engine, BacktestingEngine):
             self.available_cash = self.cta_engine.capital
         else:
-            account_symbol1 = self.cta_engine.main_engine.engines["oms"].get_account("BINANCE." + self.symbol1)
-            self.available_cash = account_symbol1.available
-            if self.interval == Interval.MINUTE:
-                self.bg = BarGenerator(self.on_bar, 1, self.on_real_bar, Interval.MINUTE)
-            elif self.interval == Interval.HOUR:
-                self.bg = BarGenerator(self.on_bar, 1, self.on_real_bar, Interval.HOUR)
-            elif self.interval == Interval.DAILY:
-                self.bg = BarGenerator(self.on_bar, 24, self.on_real_bar, Interval.HOUR)
+            account_symbol1 = self.cta_engine.main_engine.engines["oms"].get_account("binance." + self.symbol1)
+            #account_symbol1 = self.cta_engine.main_engine.query_account()
+            if account_symbol1:
+                self.available_cash = account_symbol1.available
+                if self.interval == Interval.MINUTE:
+                    self.bg = BarGenerator(self.on_bar, 1, self.on_real_bar, Interval.MINUTE)
+                elif self.interval == Interval.HOUR:
+                    self.bg = BarGenerator(self.on_bar, 1, self.on_real_bar, Interval.HOUR)
+                elif self.interval == Interval.DAILY:
+                    self.bg = BarGenerator(self.on_bar, 24, self.on_real_bar, Interval.HOUR)
 
     def on_init(self):
         """初始化策略（必须由用户继承实现）"""
@@ -142,7 +144,7 @@ class SarStrategy(CtaTemplate):
         if isinstance(self.cta_engine, BacktestingEngine):
             return self.pos
         else:
-            account_symbol2 = self.cta_engine.main_engine.engines["oms"].get_account("BINANCE." + self.symbol2)
+            account_symbol2 = self.cta_engine.main_engine.engines["oms"].get_account("binance." + self.symbol2)
             # 币安每余额返回None
             if account_symbol2:
                 if not bar or bar.close_price * account_symbol2.available > 20:
@@ -156,7 +158,7 @@ class SarStrategy(CtaTemplate):
         if isinstance(self.cta_engine, BacktestingEngine):
             return self.available_cash
         else:
-            account_symbol1 = self.cta_engine.main_engine.engines["oms"].get_account("BINANCE." + self.symbol1)
+            account_symbol1 = self.cta_engine.main_engine.engines["oms"].get_account("binance." + self.symbol1)
             # 币安每余额返回None
             if account_symbol1:
                 return account_symbol1.available
@@ -171,8 +173,8 @@ class SarStrategy(CtaTemplate):
             self.my_log(f"{k}:{getattr(self, k)}")
 
         if not isinstance(self.cta_engine, BacktestingEngine):
-            symbol1_account = self.cta_engine.main_engine.engines["oms"].get_account("BINANCE." + self.symbol1)
-            symbol2_account = self.cta_engine.main_engine.engines["oms"].get_account("BINANCE." + self.symbol2)
+            symbol1_account = self.cta_engine.main_engine.engines["oms"].get_account("binance." + self.symbol1)
+            symbol2_account = self.cta_engine.main_engine.engines["oms"].get_account("binance." + self.symbol2)
             self.my_log(f"{symbol1_account}")
             self.my_log(f"{symbol2_account}")
         self.put_event()

@@ -67,7 +67,7 @@ class OmsEngineEx(OmsEngine):
 
         self.order_update_interval = 0  # for counting the timer.
         self.position_update_interval = 0
-        self.account_update_interval = SETTINGS.get('account_update_interval', 120)
+        self.account_update_interval = 0 #SETTINGS.get('account_update_interval', 120)
 
     def register_event(self) -> None:
         super().register_event()
@@ -89,7 +89,7 @@ class OmsEngineEx(OmsEngine):
                 if order.datetime and (datetime.now(order.datetime.tzinfo) - order.datetime).seconds > SETTINGS.get('order_update_timer', 120):
                     #req = order.create_query_request()
                     req = QueryRequest(
-                        orderid=order.orderid, symbol=order.symbol, exchange=order.exchange
+                         orderid=order.orderid, symbol=order.symbol, exchange=order.exchange
                     )
                     self.main_engine.query_order(req, order.gateway_name)
 
