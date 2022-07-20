@@ -128,15 +128,15 @@ class SarStrategy(CtaTemplate):
         """初始化策略（必须由用户继承实现）"""
         self.my_log(u'策略初始化')
 
-        # 载入历史数据，并采用回放计算的方式初始化策略数值
+        # 实盘模式时才会真正加载 载入历史数据，并采用回放计算的方式初始化策略数值
         if self.interval == Interval.MINUTE:
-            self.load_bar(math.ceil(self.seg_size / 24 / 60), self.interval)
+            self.load_bar(math.ceil(self.seg_size / 24 / 60), self.interval, use_database=False)
         elif self.interval == Interval.HOUR:
-            self.load_bar(math.ceil(self.seg_size / 24), self.interval)
+            self.load_bar(math.ceil(self.seg_size / 24), self.interval, use_database=False)
         elif self.interval == Interval.DAILY:
-            self.load_bar(self.seg_size, self.interval)
+            self.load_bar(self.seg_size, self.interval, use_database=False)
         else:
-            self.load_bar(self.seg_size, self.interval)
+            self.load_bar(self.seg_size, self.interval, use_database=False)
 
         # self.putEvent()
 
@@ -211,7 +211,7 @@ class SarStrategy(CtaTemplate):
             self.bg.update_bar(bar)
 
     def on_real_bar(self, bar):
-        # print("on_day_bar:", bar.datetime, " bar:", bar)
+        print("on_day_bar:", bar.datetime, " bar:", bar)
         self.am.update_bar(bar)
 
         # 计算指标数值 - 过程指标，要在inited前执行
