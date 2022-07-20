@@ -54,58 +54,61 @@ class CtaEngineEx(CtaEngine):
             use_database: bool
     ):
         """"""
-        symbol, exchange = extract_vt_symbol(vt_symbol)
-        #end: datetime = datetime.now(LOCAL_TZ)
-        end = datetime.now(get_localzone())
-        start = end - timedelta(days)
-        # ti 0点触发
-        start = start.replace(hour=8, minute=0, second=0, microsecond=0)
-        bars = []
+        bars = super().load_bar(vt_symbol, days, interval, callback, use_database)
 
-        # Pass gateway and RQData if use_database set to True
-        if not use_database:
-            # Query bars from gateway if available
-            contract = self.main_engine.get_contract(vt_symbol)
-
-            if contract and contract.history_data:
-                req = HistoryRequest(
-                    symbol=symbol,
-                    exchange=exchange,
-                    interval=interval,
-                    start=start,  # ti 8点开始，binance 1分钟合成日数据和直接获取的日数据对应的上
-                    end=end
-                )
-                bars = self.main_engine.query_history(req, contract.gateway_name)
-
-            # Try to query bars from RQData, if not found, load from database.
-            else:
-                bars = self.query_bar_from_rq(symbol, exchange, interval, start, end)
-
-        if not bars:
-            bars = get_database().load_bar_data(
-                symbol=symbol,
-                exchange=exchange,
-                interval=interval,
-                start=start,
-                end=end,
-            )
+        # symbol, exchange = extract_vt_symbol(vt_symbol)
+        # #end: datetime = datetime.now(LOCAL_TZ)
+        # end = datetime.now(get_localzone())
+        # start = end - timedelta(days)
+        # # ti 0点触发
+        # start = start.replace(hour=8, minute=0, second=0, microsecond=0)
+        # bars = []
+        #
+        # # Pass gateway and RQData if use_database set to True
+        # if not use_database:
+        #     # Query bars from gateway if available
+        #     contract = self.main_engine.get_contract(vt_symbol)
+        #
+        #     if contract and contract.history_data:
+        #         req = HistoryRequest(
+        #             symbol=symbol,
+        #             exchange=exchange,
+        #             interval=interval,
+        #             start=start,  # ti 8点开始，binance 1分钟合成日数据和直接获取的日数据对应的上
+        #             end=end
+        #         )
+        #         bars = self.main_engine.query_history(req, contract.gateway_name)
+        #
+        #     # Try to query bars from RQData, if not found, load from database.
+        #     else:
+        #         bars = self.query_bar_from_rq(symbol, exchange, interval, start, end)
+        #
+        # if not bars:
+        #     bars = get_database().load_bar_data(
+        #         symbol=symbol,
+        #         exchange=exchange,
+        #         interval=interval,
+        #         start=start,
+        #         end=end,
+        #     )
 
         # ti 缺失bar处理，保持时间连续
         tmp_bar = None
         interval_delta = INTERVAL_DELTA_MAP[interval]
         for bar in bars:
             if tmp_bar and tmp_bar.datetime + interval_delta != bar.datetime:
-                self.write_log(f"bar missing start:{tmp_bar} end:{end}",)
+                self.write_log(f"bar missing start:{tmp_bar} ",)
                 tmp_bar.volume = 0
                 while True:
                     if tmp_bar.datetime == bar.datetime:
                         break
                     tmp_bar.datetime += interval_delta
-                    callback(tmp_bar)
+                    #callback(tmp_bar)
             tmp_bar = bar
             # if bar.datetime.day == 11 and bar.datetime.hour == 7 and bar.datetime.minute == 59:
             #     tmp_bar = bar
-            callback(bar)
+            #callback(bar)
+        return bars
 
     def start_all_strategies(self) -> None:
         """

@@ -90,8 +90,8 @@ def run_child(currency):
     loaded_setting = load_json(filename)
     main_engine.connect(loaded_setting, gateway_name)
 
-    main_engine.write_log("sleep10等待connect连接")
-    #sleep(10)
+    # main_engine.write_log("sleep10等待connect连接")
+    # sleep(10)
     vt_symbol = currency
     cta_engine.setting_filename = f"cta_strategy_setting_{vt_symbol}.json"
     cta_engine.data_filename = f"cta_strategy_data_{vt_symbol}.json"

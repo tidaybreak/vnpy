@@ -67,7 +67,7 @@ class OmsEngineEx(OmsEngine):
 
         self.order_update_interval = 0  # for counting the timer.
         self.position_update_interval = 0
-        self.account_update_interval = 0 #SETTINGS.get('account_update_interval', 120)
+        self.account_update_interval = 0  # connect完会自己发起连接 SETTINGS.get('account_update_interval', 120) - 3
 
     def register_event(self) -> None:
         super().register_event()

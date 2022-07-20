@@ -91,31 +91,38 @@ class SarStrategy(CtaTemplate):
             if k in setting:
                 setattr(self, k, setting[k])
         if "interval" in setting:
-            if setting[k] == 'd':
+            if setting["interval"] == 'd':
                 self.interval = Interval.DAILY
-            elif setting[k] == '1h':
+            elif setting["interval"] == '1h':
                 self.interval = Interval.HOUR
-            elif setting[k] == '1m':
+            elif setting["interval"] == '1m':
                 self.interval = Interval.MINUTE
         if "symbol1" in setting:
             self.symbol1 = setting["symbol1"]
         self.no_log = setting.get('no_log', False)
 
         self.symbol2 = vt_symbol.split('.')[0].upper().replace(self.symbol1, "")
-        self.am = ArrayManagerEx(self.seg_size)
         if isinstance(self.cta_engine, BacktestingEngine):
+            self.am = ArrayManagerEx(self.seg_size)
             self.available_cash = self.cta_engine.capital
         else:
+            if self.interval == Interval.MINUTE:
+                self.am = ArrayManagerEx(math.ceil(self.seg_size / 24 / 60) * 1440)
+            elif self.interval == Interval.HOUR:
+                self.am = ArrayManagerEx(math.ceil(self.seg_size / 24) * 24)
+            else:
+                self.am = ArrayManagerEx(self.seg_size)
+
             account_symbol1 = self.cta_engine.main_engine.engines["oms"].get_account("binance." + self.symbol1)
-            #account_symbol1 = self.cta_engine.main_engine.query_account()
-            if account_symbol1:
-                self.available_cash = account_symbol1.available
-                if self.interval == Interval.MINUTE:
-                    self.bg = BarGenerator(self.on_bar, 1, self.on_real_bar, Interval.MINUTE)
-                elif self.interval == Interval.HOUR:
-                    self.bg = BarGenerator(self.on_bar, 1, self.on_real_bar, Interval.HOUR)
-                elif self.interval == Interval.DAILY:
-                    self.bg = BarGenerator(self.on_bar, 24, self.on_real_bar, Interval.HOUR)
+            # account_symbol1 = self.cta_engine.main_engine.query_account()
+            #if account_symbol1:
+            self.available_cash = account_symbol1.available
+            if self.interval == Interval.MINUTE:
+                self.bg = BarGenerator(self.on_bar, 1, self.on_real_bar, Interval.MINUTE)
+            elif self.interval == Interval.HOUR:
+                self.bg = BarGenerator(self.on_bar, 1, self.on_real_bar, Interval.HOUR)
+            elif self.interval == Interval.DAILY:
+                self.bg = BarGenerator(self.on_bar, 24, self.on_real_bar, Interval.HOUR)
 
     def on_init(self):
         """初始化策略（必须由用户继承实现）"""
@@ -123,13 +130,13 @@ class SarStrategy(CtaTemplate):
 
         # 载入历史数据，并采用回放计算的方式初始化策略数值
         if self.interval == Interval.MINUTE:
-            self.load_bar(math.ceil(self.seg_size / 24 / 60))
+            self.load_bar(math.ceil(self.seg_size / 24 / 60), self.interval)
         elif self.interval == Interval.HOUR:
-            self.load_bar(math.ceil(self.seg_size / 24))
+            self.load_bar(math.ceil(self.seg_size / 24), self.interval)
         elif self.interval == Interval.DAILY:
-            self.load_bar(self.seg_size)
+            self.load_bar(self.seg_size, self.interval)
         else:
-            self.load_bar(self.seg_size)
+            self.load_bar(self.seg_size, self.interval)
 
         # self.putEvent()
 
