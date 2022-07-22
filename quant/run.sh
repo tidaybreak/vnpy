@@ -5,7 +5,11 @@ real_path=$(pwd)
 echo  "本脚本文件所在目录路径是: $real_path "
 cd $real_path
 
-export PYTHONPATH=$PYTHONPATH:$real_path
-cd quant
-python backtest_op_console.py
+export PYTHONPATH=$PYTHONPATH:$real_path"/.."
+export PYTHONPATH=$PYTHONPATH:$real_path"/../.."
+#cd quant
+
+#python download_data.py
+#python backtest_console.py
+python optimization_console.py
 #python main_console.py $*

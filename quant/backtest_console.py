@@ -12,23 +12,67 @@ from pytz import timezone
 import os
 
 
-def run(currency, setting, rate, capital):
+def run(currency):
+    interval = Interval.HOUR
+    rate = 1.0 / 1000  # 手续费
+    capital = 200  # 起始资金
+
+    # SAR
+    setting = {
+        "class_name": "SarStrategy",
+        "seg_size": 90,  # 90个周期后开始交易 30时sar step准确只到8
+        "sar_acceleration": 0.02,
+        "sar_maximum": 0.2,
+        "rsi_length": 14,
+        "position_ratio": 100,  # 每次下100刀
+        "open_eq_sar_step": 7,
+        "open_lt_rsi": 0,  # [20, 1, 90] 0
+        "open_gt_ema": 0,  # [0, 1, 30] 2
+        "stop_eq_sar_step": 10,  # [1, 1, 10] 0
+        "stop_gt_rsi": 0,
+        "stop_lt_ema": 0,
+        "stop_gt_move": 0.0,  # [0.01, 0.01, 0.3] 0.22
+        "stop_win_per": 0.0,
+        "stop_loss_per": 0.0
+    }
+
+    setting = {
+        "class_name": "SarStrategy",
+        "seg_size": 200,  # 90个周期后开始交易 30时sar step准确只到8
+        "sar_acceleration": 0.02,
+        "sar_maximum": 0.2,
+        "rsi_length": 14,
+        "position_ratio": 100,  # 每次下100刀
+        "open_eq_sar_step": 0,
+        "open_lt_rsi": 0,  # [20, 1, 90] 0
+        "open_gt_ema": 109,  # [0, 1, 30] 2
+        "stop_eq_sar_step": 0,  # [1, 1, 10] 0
+        "stop_gt_rsi": 0,
+        "stop_lt_ema": 95,
+        "stop_gt_move": 0.0,  # [0.01, 0.01, 0.3] 0.22
+        "stop_win_per": 0.0,
+        "stop_loss_per": 0.0
+    }
     engine = BacktestingEngineEx()
     symbol = currency + "usdt"
-    interval = Interval.DAILY
+
     overview = get_database().get_bar_overview()
     data = None
     for item in overview:
         if item.symbol == symbol.lower() and item.interval == interval:
             data = item
             break
-    interval_delta = INTERVAL_DELTA_MAP[interval]
+    # interval_delta = INTERVAL_DELTA_MAP[interval]
 
     start = data.start
+    # start = start.replace(year=2022, month=1, day=1)
+
     end = data.end
     # 日要从8点开始
-    #start = datetime(2018, 9, 6, 8) - interval_delta * 30
-    #end = datetime(2021, 7, 6, 8)
+    # start = datetime(2018, 9, 6, 8) - interval_delta * 30
+    # end = datetime(2017, 9, 20, 8)
+    # end = end.replace(year=2017, month=9, day=20)
+
     engine.set_parameters(
         vt_symbol=symbol.lower() + ".BINANCE",
         # vt_symbol="xmrusdt.BINANCE",  # 现货的数据
@@ -45,7 +89,7 @@ def run(currency, setting, rate, capital):
     engine.add_strategy(SarStrategy, setting)
     engine.run_backtesting()
 
-    #engine.statistics_batch()
+    # engine.statistics_batch()
     engine.calculate_result()  # 计算回测的结果
     # statistics_op = {}
     # for ent in engine.daily_dfs:
@@ -55,9 +99,9 @@ def run(currency, setting, rate, capital):
 
     # 区间推进统计
     chart_path = "/home/data/docker-volume/nginx-php/html/www.tiham.com/cache/"
-    def_stat, result_def_stat, result_end_time_stat, result_move_time_stat = engine.calculate_statistics_all(start,
-                                                                                                             end,
-                                                                                                             chart_path=chart_path)
+    def_stat, result_def_stat = engine.calculate_statistics_all(start,
+                                                                end,
+                                                                chart_path=chart_path)
 
     # 参数
     str_parameter = []
@@ -70,19 +114,22 @@ def run(currency, setting, rate, capital):
 
     report = [["交易信息", engine.strategy.report_trade],
               ["信号", engine.strategy.report_signal],
-              ["结束时间推进统计", result_end_time_stat],
-              ["区间时间推进统计", result_move_time_stat],
+             # ["结束时间推进统计", result_end_time_stat],
+             # ["区间时间推进统计", result_move_time_stat],
               ["默认统计", result_def_stat],
               ["参数", parameters]]
 
-    #title_statistics = f"[{def_stat['总收益率']}_{def_stat['总成交次数']}_{def_stat['百分比最大回撤']}_{def_stat['胜率']}_{def_stat['盈亏比']}]"
+    # title_statistics = f"[{def_stat['总收益率']}_{def_stat['总成交次数']}_{def_stat['百分比最大回撤']}_{def_stat['胜率']}_{def_stat['盈亏比']}]"
     title_statistics = ""
-    file_name = f"交易记录-{symbol}-{interval}-{title_statistics}-[{str_parameter}].xlsx"
+    file_name = f"交易记录-{symbol}-{interval}-[{str_parameter}].xlsx"
 
     save_file = "result/" + file_name
     if os.path.exists(save_file):
         os.remove(save_file)
     report_excel_xlsx(save_file, report)
+
+    for ent in result_def_stat:
+        print(f"{ent[0]}：\t{ent[1]}")
 
     print(file_name)
     print("overview:", data.symbol, data.interval, start, end)
@@ -90,28 +137,6 @@ def run(currency, setting, rate, capital):
 
 if __name__ == '__main__':
     currency = ['btc']
-    rate = 1.0 / 1000   # 手续费
-    capital = 200       # 起始资金
 
-    setting = dict()
-    setting["btc"] = {
-        "class_name": "SarStrategy",
-        "interval": "d",
-        "seg_size": 30,         # 1个月后交易
-        "sar_acceleration": 0.02,
-        "sar_maximum": 0.2,
-        "rsi_length": 14,
-        "position_ratio": 100,  # 每次下100刀
-        "slippage": 0.001,      # 滑点
-        "open_eq_sar_step": 1,
-        "open_lt_rsi": 0,  # [20, 1, 90] 0
-        "open_gt_ema": 0,  # [0, 1, 30] 2
-        "stop_eq_sar_step": 1,  # [1, 1, 10] 0
-        "stop_gt_rsi": 0,
-        "stop_lt_ema": 0,
-        "stop_gt_move": 0.189,  # [0.01, 0.01, 0.3] 0.22
-        "stop_win_per": 0.0,
-        "stop_loss_per": 0.0
-    }
     for ent in currency:
-        run(ent, setting[ent], rate, capital)
+        run(ent)

@@ -184,7 +184,7 @@ class BacktestingEngineEx(BacktestingEngine):
         self.load_data()
 
         # Get optimization setting and target
-        settings = optimization_setting.generate_setting()
+        settings = optimization_setting.generate_settings()
         target_name = optimization_setting.target_name
 
         if not settings:
@@ -229,7 +229,7 @@ class BacktestingEngineEx(BacktestingEngine):
                 self.capital,
                 self.end,
                 self.mode,
-                self.inverse,
+                #self.inverse,
                 idx,
                 self.history_data
             )))
@@ -239,36 +239,21 @@ class BacktestingEngineEx(BacktestingEngine):
         pool.join()
 
         new_results = {
-            "result_move_time_stat": {},
-            "result_end_time_stat": {}
+
         }
 
         for result in results:
-            one = result.get()
-            for stat in one[0]:
-                move_time = stat[0]
-                setting = stat[1]
-                target_value = stat[2]
-                statistics = stat[3]
-                if move_time not in new_results["result_move_time_stat"]:
-                    new_results["result_move_time_stat"][move_time] = []
-                new_results["result_move_time_stat"][move_time].append((setting, target_value, statistics))
-
-            for stat in one[1]:
-                move_time = stat[0]
-                setting = stat[1]
-                target_value = stat[2]
-                statistics = stat[3]
-                if move_time not in new_results["result_end_time_stat"]:
-                    new_results["result_end_time_stat"][move_time] = []
-                new_results["result_end_time_stat"][move_time].append((setting, target_value, statistics))
+            item = result.get()
+            key = item[0]
+            if key not in new_results:
+                new_results[key] = []
+            new_results[key].append((item[1], item[2], item[3]))
 
         # result_move_time_stat = []
-        for ent in new_results["result_move_time_stat"]:
-            new_results["result_move_time_stat"][ent].sort(reverse=True, key=lambda result: result[1])
+        for ent in new_results:
+            new_results[ent].sort(reverse=True, key=lambda result: result[1])
+            new_results[ent] = new_results[ent][:100]
             # result_move_time_stat.append(new_results["result_move_time_stat"][ent][0])
-        for ent in new_results["result_end_time_stat"]:
-            new_results["result_end_time_stat"][ent].sort(reverse=True, key=lambda result: result[1])
 
         return new_results
 
@@ -286,20 +271,23 @@ class BacktestingEngineEx(BacktestingEngine):
         return result_values
 
     def calculate_statistics_all(self, start=None, end=None, chart_path=None):
+        statistics_dict = self.calculate_statistics_plus(chart_path=chart_path)
+        # result_def_stat = [[['指标', 'FFA500', 20], '值'],
+        #                    ["时间段", f"{start.strftime('%Y-%m-%d')} - {end.strftime('%Y-%m-%d')}"]]
+        statistics_list = []
+        for key in statistics_dict:
+            statistics_list += [[key, statistics_dict[key]]]
+
+        return statistics_dict, statistics_list
+
         # 区间推进
-        interval_delta = INTERVAL_DELTA_MAP[self.interval]
-        def_stat = self.calculate_statistics_plus(chart_path=chart_path)
-        result_def_stat = [[['指标', 'FFA500', 20], '值'],
-                           ["时间段", f"{start.strftime('%Y-%m-%d')} - {end.strftime('%Y-%m-%d')}"]]
-        for key in def_stat:
-            result_def_stat += [[key, def_stat[key]]]
+        stat_end = start
         title = ["开始时间", "结束时间"]
-        for name in def_stat:
+        for name in statistics_dict:
             title += [name]
         result_end_time_stat = [title]
         result_move_time_stat = [title]
-        stat_end = start
-
+        interval_delta = INTERVAL_DELTA_MAP[self.interval]
         def calculate_result(stats, values):
             for k, v in stats.items():
                 if k == '总收益率':
@@ -310,6 +298,11 @@ class BacktestingEngineEx(BacktestingEngine):
                     #    v = [v, ""]
                 values += [v]
             return values
+
+        values = [start, end]
+        result_end_time_stat += [calculate_result(def_stat, values)]
+        return def_stat, result_def_stat, result_end_time_stat, result_end_time_stat
+
         while True:
             if stat_end >= end:
                 break
@@ -360,7 +353,7 @@ class BacktestingEngineEx(BacktestingEngine):
         }
         # statistics = dict()
         self.calculate_result_by_date(start, end)
-        statistics = self.calculate_statistics()
+        statistics = self.calculate_statistics(output=False)
         if chart_path:
             self.show_chart(safe_path=chart_path + 'fig1.png')
 
@@ -538,9 +531,10 @@ class BacktestingEngineEx(BacktestingEngine):
                 df["acum_pnl"] = df["net_pnl"].cumsum()
                 df["balance"] = df["acum_pnl"] + capital
 
-                df["return"] = np.log(
-                    df["balance"] / df["balance"].shift(1)
-                ).fillna(0)
+                # console下optimization_console会报错 pandas/core/arraylike.py:364: RuntimeWarning: invalid value encountered in log
+                # df["return"] = np.log(
+                #     df["balance"] / df["balance"].shift(1)
+                # ).fillna(0)
                 df["highlevel"] = 0
                 if len(df["balance"]) > 0:
                     df["highlevel"] = (
@@ -665,6 +659,9 @@ class BacktestingEngineEx(BacktestingEngine):
         if df is None:
             return
 
+        if "net_pnl" not in df:
+            return
+
         max_window = 100
         merge_window = 0
         if len(df["net_pnl"]) > max_window:
@@ -725,7 +722,7 @@ def optimizeEx(
         capital: int,
         end: datetime,
         mode: BacktestingMode,
-        inverse: bool,
+        # inverse: bool,
         idx,
         history_data
 ):
@@ -747,12 +744,12 @@ def optimizeEx(
         capital=capital,
         end=end,
         mode=mode,
-        inverse=inverse
+        # inverse=inverse
     )
 
     engine.add_strategy(strategy_class, setting)
     engine.history_data = history_data
-    #engine.load_data()
+    # engine.load_data()
     engine.run_backtesting()
     engine.calculate_result()
 
@@ -761,27 +758,39 @@ def optimizeEx(
     #     engine.daily_df = engine.daily_dfs[ent]
     #     statistics_op[ent] = engine.calculate_statistics(output=False)
 
-    # statistics = engine.calculate_statistics(output=False)
-
-    statistics, result_def_stat, result_end_time_stat, result_move_time_stat = engine.calculate_statistics_all(start, end)
-
-    # target_value = statistics[target_name]
+    statistics_dict, statistics_list = engine.calculate_statistics_all(start, end)
 
     if idx > 0:
         print(f"{datetime.now()}-{idx}\t")
 
+    values = []
+    for ent in statistics_dict:
+        values += [statistics_dict[ent]]
+
+    return ("key", setting, statistics_dict["总盈亏"], values)
+
+
+
+
+    # target_value = statistics[target_name]
+
+
+
     def calculate_result(stats):
         items = []
-        for item in stats[1:]:
-            key = f"{item[0]}-{item[1]}"
-            target_value = 0
-            if len(item) > 4:
-                target_value = float(item[4][0])
-            items.append((key, setting, target_value, item[2:]))
+        # for item in stats[1:]:
+        #     # key = f"{item[0]}-{item[1]}"
+        #     key = ""
+        #     target_value = 0
+        #     if len(item) > 4:
+        #         target_value = float(item[4][0])
+        #     items.append((key, setting, target_value, item[2:]))
+        key = f"{start}-{end}"
+        items.append((key, setting, stats[1][12], stats[1][2:]))
         return items
 
-    result_move_time = calculate_result(result_move_time_stat)
-    result_end_time = calculate_result(result_end_time_stat)
+    result_move_time = calculate_result(result_end_time_stat)
+    result_end_time = result_move_time
 
     # for stat in result_move_time_stat:
     #     key = f"{stat[0]}-{stat[1]}"
@@ -797,7 +806,7 @@ def optimizeEx(
     #     if len(stat) > 4:
     #         target_value = float(stat[4][0])
     #     result_end_time.append((key, str(setting), target_value, stat))
-
+    #return ([result_def_stat], [result_def_stat])
     return (result_move_time, result_end_time)
     # return (str(setting), target_value, statistics)
 

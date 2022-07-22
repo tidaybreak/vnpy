@@ -12,14 +12,14 @@ import numpy as np
 import talib
 
 import openpyxl
-from openpyxl.styles import  PatternFill
+from openpyxl.styles import PatternFill
 from openpyxl.utils import get_column_letter
 from vnpy.trader.database import get_database
 
 from vnpy.trader.object import Interval
 
-
-from vnpy.trader.utility import ArrayManager
+from vnpy.trader.utility import ArrayManager, BarGenerator
+from vnpy.trader.object import BarData, TickData
 
 
 class ArrayManagerEx(ArrayManager):
@@ -64,3 +64,25 @@ class ArrayManagerEx(ArrayManager):
         if array:
             return result
         return result[-1]
+
+
+# class BarGeneratorEx(BarGenerator):
+#     def __init__(
+#             self,
+#             on_bar: Callable,
+#             window: int = 0,
+#             on_window_bar: Callable = None,
+#             interval: Interval = Interval.MINUTE
+#     ) -> None:
+#         super().__init__(on_bar, window, on_window_bar, interval)
+#
+#     def update_bar(self, bar: BarData) -> None:
+#         """
+#         Update 1 minute bar into generator
+#         """
+#         if self.interval == Interval.MINUTE:
+#             self.update_bar_minute_window(bar)
+#         elif self.interval == Interval.HOUR:
+#             self.update_bar_hour_window(bar)
+#         else:
+#             self.update_bar_day_window(bar)

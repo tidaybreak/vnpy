@@ -1,2 +1,0 @@
-set batPath =%~dp0
-rsync -qvzrP -e "ssh -i C:\Users\ti\.ssh\id_rsa -p 62738" --delete --exclude-from=/cygdrive/d/drive/code/trading/vnpy/rsync_exclude.txt /cygdrive/d/drive/code/trading/vnpy/ root@121.46.18.119:/home/ti/vnpy

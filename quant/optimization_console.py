@@ -64,50 +64,46 @@ if __name__ == '__main__':
     engine = BacktestingEngineEx()
     currency = "btc"
     symbol = currency + "usdt"
-    interval = Interval.DAILY
+    interval = Interval.HOUR
     data = get_symbol_overview(symbol, interval)
 
     class_name = "SarStrategy"
     rate = 1.0 / 1000
     capital = 1000
-    slippage = 0.0
-    size = 1.0
-    pricetick = 0.1
+
+    start = data.start
+    # start = start.replace(year=2021, month=2, day=1)
+
+    end = data.end
 
     training_parameters = dict()
     training_parameters["btc"] = {
-        "seg_size": 30,
+        "seg_size": 90,
         "sar_acceleration": 0.02,
         "sar_maximum": 0.2,
         "rsi_length": 14,
-        "position_ratio": 1 - rate,
-        "slippage": 0.001,
-        "open_eq_sar_step": [1, 1, 10],
+        "position_ratio": 100,
+        "open_eq_sar_step": 0,
         "open_lt_rsi": 0,  # [20, 1, 90]
-        "open_gt_ema": [0, 1, 20],  # [0, 1, 30]
+        "open_gt_ema": 0,  # [0, 1, 30]
         "stop_eq_sar_step": 0,  # [1, 1, 10]
         "stop_gt_rsi": 0,
-        "stop_lt_ema": [0, 1, 20],
-        "stop_gt_move": [0.05, 0.02, 0.2],  # [0.01, 0.01, 0.3]
-        "stop_win_per": 0.0,
-        "stop_loss_per": 0.0
+        "stop_lt_ema": 0,
+        "stop_gt_move": 0,  # [0.01, 0.01, 0.3]
+        "stop_win_per": 0,
+        "stop_loss_per": 0
     }
-    training_parameters["fil"] = {
-        "seg_size": 30,
-        "sar_acceleration": 0.02,
-        "sar_maximum": 0.2,
-        "rsi_length": 14,
-        "position_ratio": 1 - rate,
-        "slippage": 0.001,
-        "open_eq_sar_step": 2,
-        "open_lt_rsi": [20, 1, 90],  # [20, 1, 90]
-        "open_gt_ema": [0, 1, 30],  # [0, 1, 30]
-        "stop_eq_sar_step": 0,  # [1, 1, 10]
-        "stop_gt_rsi": 0,
-        "stop_gt_move": 0.1199,  # [0.01, 0.01, 0.3]
-        "stop_win_per": 0.0,
-        "stop_loss_per": 0.0
+
+    # EMA
+    setting = {
+        "seg_size": 200,
+        "open_gt_ema": [50, 5, 200],  # [0, 1, 30]
+        "stop_lt_ema": [50, 5, 200]
     }
+
+
+    for ent in setting:
+        training_parameters["btc"][ent] = setting[ent]
 
     optimization_setting, use_ga = generate_setting(rate, training_parameters[currency])
 
@@ -120,22 +116,21 @@ if __name__ == '__main__':
 
     engine.clear_data()
 
-    if interval == Interval.TICK:
-        mode = BacktestingMode.TICK
-    else:
-        mode = BacktestingMode.BAR
+    #if interval == Interval.TICK:
+    #    mode = BacktestingMode.TICK
+    # else:
+    mode = BacktestingMode.BAR
 
     engine.set_parameters(
         vt_symbol=symbol.lower() + ".BINANCE",
         interval=interval,
-        start=data.start,
-        end=data.end,
+        start=start,
+        end=end,
         rate=rate,
-        slippage=slippage,
-        size=size,
-        pricetick=pricetick,
+        slippage=0.0,
+        size=1,
+        pricetick=0.01,
         capital=capital,
-        #inverse=False,
         mode=mode
     )
 
@@ -155,30 +150,37 @@ if __name__ == '__main__':
     print(json.dumps(training_parameters[currency], cls=ComplexEncoder, sort_keys=False, indent=4, separators=(',', ':')))
 
     def calculate_result(result):
-        report = [['时间', '收益']]
+        report = [['时间', '优化参数值']]
         setting_head = []
         for move_time, values in result.items():
-            setting = []
             for k, v in values[0][0].items():
-                setting.append(v)
                 if len(setting_head) != len(values[0][0]):
                     setting_head.append(k)
-            target_value = values[0][1]
-            statistics = values[0][2]
-            report.append([move_time, target_value] + setting + statistics)
+            for v in values:
+                setting = []
+                for k2, v2 in v[0].items():
+                    setting.append(v2)
+                    if len(setting_head) != len(v[0]):
+                        setting_head.append(k2)
+
+                target_value = v[1]
+                statistics = v[2]
+                print([move_time, target_value] + setting + statistics[-8:])
+                report.append([move_time, target_value] + setting + statistics)
 
         statistics_head = []
-        statistics_dict = engine.calculate_result_new()
+        statistics_dict = engine.calculate_statistics_plus()
         for k, v in statistics_dict.items():
             statistics_head.append([k, "00FFFF"])
         report[0] += setting_head + statistics_head
         return report
 
-    report1 = calculate_result(result_values["result_move_time_stat"])
-    report2 = calculate_result(result_values["result_end_time_stat"])
+    report = calculate_result(result_values)
+    #report2 = calculate_result(result_values["result_end_time_stat"])
 
     file_name = f"参数优化-{symbol}-{interval}.xlsx"
     save_file = "result/" + file_name
     if os.path.exists(save_file):
         os.remove(save_file)
-    report_excel_xlsx(save_file, [["区间时间推进统计", report1], ["结束时间推进统计", report2]])
+    report_excel_xlsx(save_file, [["result", report]])
+    #report_excel_xlsx(save_file, [["区间时间推进统计", report1], ["结束时间推进统计", report2]])
