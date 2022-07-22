@@ -209,12 +209,12 @@ if __name__ == '__main__':
 
     # 如果你有代理你就设置，如果没有你就设置为 None 或者空的字符串 "",
     # 但是你要确保你的电脑网络能访问币安交易所，你可以通过 ping api.binance.com 看看过能否ping得通
-    proxy_host = "node2.wy2.com"  # 如果没有就设置为"", 如果有就设置为你的代理主机如：127.0.0.1
+    proxy_host = ""  # 如果没有就设置为"", 如果有就设置为你的代理主机如：127.0.0.1
     proxy_port = 1090  # 设置你的代理端口号如: 1087, 没有你修改为0,但是要保证你能访问api.binance.com这个主机。
 
     proxies = None
     if proxy_host and proxy_port:
-        proxy = f'http://wengzt%40ofidc.com:ti2751231@{proxy_host}:{proxy_port}'
+        proxy = f'http://:@{proxy_host}:{proxy_port}'
         proxies = {'http': proxy, 'https': proxy}
 
     # get_binance_data("BTCUSDT", Interval.MINUTE, 'spot', "2021-4-8", "2021-4-9")
