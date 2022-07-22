@@ -1,0 +1,6 @@
+vendor
+socksproxy-web/vendor
+venv
+__pycache__
+.git
+quant/.vntrader/

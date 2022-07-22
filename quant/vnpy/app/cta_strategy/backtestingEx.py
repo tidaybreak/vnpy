@@ -26,7 +26,7 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
 import pytz
-utc=pytz.UTC
+utc = pytz.UTC
 
 
 pd.set_option('mode.chained_assignment', None)

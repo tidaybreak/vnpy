@@ -1,10 +1,11 @@
-
 import json
 import os
+import sys
+import pytz
+from strategies import *
 from vnpy.trader.object import Interval
 from strategies.sar_strategy import SarStrategy
-from quant.vnpy.trader.engineEx import MainEngineEx
-
+#from quant.vnpy.trader.engineEx import MainEngineEx
 from quant.units import get_symbol_overview, report_excel_xlsx
 from quant.vnpy.app.cta_strategy.backtestingEx import BacktestingEngineEx
 from datetime import date, datetime
@@ -15,12 +16,12 @@ from vnpy_ctastrategy.backtesting import (
 from vnpy_ctastrategy.base import (
     BacktestingMode
 )
+from vnpy.trader.utility import load_json
 
 
-def generate_setting(rate, parameters):
+def generate_setting(parameters):
     """"""
     optimization_setting = OptimizationSetting()
-
     optimization_setting.set_target('total_return')
 
     for name, d in parameters.items():
@@ -45,10 +46,6 @@ def generate_setting(rate, parameters):
     return optimization_setting, False
 
 
-def format_json_str(s):
-    return s.replace('\'', '"').replace(": True", ": true").replace(": False", ": false")
-
-
 class ComplexEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime):
@@ -57,55 +54,69 @@ class ComplexEncoder(json.JSONEncoder):
             return obj.strftime('%Y-%m-%d')
         else:
             return str(obj)
-            #return json.JSONEncoder.default(self, obj)
+            # return json.JSONEncoder.default(self, obj)
 
 
 if __name__ == '__main__':
+    config = dict()
+    if len(sys.argv) > 1:
+        setting = sys.argv[1]
+        filename: str = f"optimization/{setting}.json"
+        print("使用配置文件:", filename)
+        config = load_json(filename)
+        symbol = config["symbol"]
+        eng_conf = config["engine"]
+        setting_conf = config["setting"]
+    else:
+        print("使用默认配置")
+        symbol = "btcusdt"
+        eng_conf = {
+            "vt_symbol": "btcusdt.BINANCE",
+            "interval": "1h",
+            "start": "2019-9-10 00:00:00",
+            "end": "",
+            "rate": 0.001,
+            "slippage": 0.0,
+            "size": 1,
+            "pricetick": 0.01,
+            "capital": 200,
+            "mode": 1
+        }
+        setting_conf = {
+            "class_name": "SarStrategy",
+            "seg_size": 200,
+            "sar_acceleration": 0.02,
+            "sar_maximum": 0.2,
+            "rsi_length": 14,
+            "position_ratio": 100,
+            "open_eq_sar_step": 0,
+            "open_lt_rsi": 0,  # [20, 1, 90]
+            "open_gt_ema": [50, 5, 200],  # [0, 1, 30]
+            "stop_eq_sar_step": 0,  # [1, 1, 10]
+            "stop_gt_rsi": 0,
+            "stop_lt_ema": [50, 5, 200],
+            "stop_gt_move": 0,  # [0.01, 0.01, 0.3]
+            "stop_win_per": 0,
+            "stop_loss_per": 0
+        }
+
     engine = BacktestingEngineEx()
-    currency = "btc"
-    symbol = currency + "usdt"
-    interval = Interval.HOUR
+    interval = Interval(eng_conf["interval"])
     data = get_symbol_overview(symbol, interval)
 
-    class_name = "SarStrategy"
-    rate = 1.0 / 1000
-    capital = 1000
-
     start = data.start
-    # start = start.replace(year=2021, month=2, day=1)
+    if eng_conf["start"] != "":
+        start2 = datetime.strptime(eng_conf["start"], '%Y-%m-%d %H:%M:%S')
+        cn_zone = pytz.timezone('Asia/Shanghai')
+        start = cn_zone.localize(dt=start2)
 
     end = data.end
+    if eng_conf["end"] != "":
+        end2 = datetime.strptime(eng_conf["end"], '%Y-%m-%d %H:%M:%S')
+        cn_zone = pytz.timezone('Asia/Shanghai')
+        end = cn_zone.localize(dt=end2)
 
-    training_parameters = dict()
-    training_parameters["btc"] = {
-        "seg_size": 90,
-        "sar_acceleration": 0.02,
-        "sar_maximum": 0.2,
-        "rsi_length": 14,
-        "position_ratio": 100,
-        "open_eq_sar_step": 0,
-        "open_lt_rsi": 0,  # [20, 1, 90]
-        "open_gt_ema": 0,  # [0, 1, 30]
-        "stop_eq_sar_step": 0,  # [1, 1, 10]
-        "stop_gt_rsi": 0,
-        "stop_lt_ema": 0,
-        "stop_gt_move": 0,  # [0.01, 0.01, 0.3]
-        "stop_win_per": 0,
-        "stop_loss_per": 0
-    }
-
-    # EMA
-    setting = {
-        "seg_size": 200,
-        "open_gt_ema": [50, 5, 200],  # [0, 1, 30]
-        "stop_lt_ema": [50, 5, 200]
-    }
-
-
-    for ent in setting:
-        training_parameters["btc"][ent] = setting[ent]
-
-    optimization_setting, use_ga = generate_setting(rate, training_parameters[currency])
+    optimization_setting, use_ga = generate_setting(setting_conf)
 
     if use_ga:
         print("开始遗传算法参数优化")
@@ -113,28 +124,27 @@ if __name__ == '__main__':
         print("开始多进程参数优化")
 
     result_values = None
-
     engine.clear_data()
 
-    #if interval == Interval.TICK:
+    # if interval == Interval.TICK:
     #    mode = BacktestingMode.TICK
     # else:
-    mode = BacktestingMode.BAR
+    # mode = BacktestingMode.BAR
 
     engine.set_parameters(
-        vt_symbol=symbol.lower() + ".BINANCE",
-        interval=interval,
+        vt_symbol=eng_conf["vt_symbol"],
+        interval=Interval(eng_conf["interval"]),
         start=start,
         end=end,
-        rate=rate,
-        slippage=0.0,
-        size=1,
-        pricetick=0.01,
-        capital=capital,
-        mode=mode
+        rate=eng_conf["rate"],
+        slippage=eng_conf["slippage"],
+        size=eng_conf["size"],
+        pricetick=eng_conf["pricetick"],
+        capital=eng_conf["capital"],
+        mode=BacktestingMode(eng_conf["mode"])
     )
 
-    engine.add_strategy(SarStrategy, {})
+    engine.add_strategy(getattr(sys.modules[__name__], setting_conf["class_name"]), {})
     # engine.cpu_count = 2
     if use_ga:
         result_values = engine.run_ga_optimization(
@@ -147,7 +157,8 @@ if __name__ == '__main__':
             output=False
         )
 
-    print(json.dumps(training_parameters[currency], cls=ComplexEncoder, sort_keys=False, indent=4, separators=(',', ':')))
+    print(json.dumps(setting_conf, cls=ComplexEncoder, sort_keys=False, indent=4, separators=(',', ':')))
+
 
     def calculate_result(result):
         report = [['时间', '优化参数值']]
@@ -175,12 +186,13 @@ if __name__ == '__main__':
         report[0] += setting_head + statistics_head
         return report
 
+
     report = calculate_result(result_values)
-    #report2 = calculate_result(result_values["result_end_time_stat"])
+    # report2 = calculate_result(result_values["result_end_time_stat"])
 
     file_name = f"参数优化-{symbol}-{interval}.xlsx"
     save_file = "result/" + file_name
     if os.path.exists(save_file):
         os.remove(save_file)
     report_excel_xlsx(save_file, [["result", report]])
-    #report_excel_xlsx(save_file, [["区间时间推进统计", report1], ["结束时间推进统计", report2]])
+    # report_excel_xlsx(save_file, [["区间时间推进统计", report1], ["结束时间推进统计", report2]])

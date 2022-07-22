@@ -1,92 +1,80 @@
 from quant.vnpy.app.cta_strategy.backtestingEx import BacktestingEngineEx
 from vnpy.trader.object import Interval
-from strategies.sar_strategy import SarStrategy
 from quant.units import report_excel_xlsx
 from vnpy.trader.database import get_database
-from vnpy_ctastrategy.base import (
-    BacktestingMode,
-    INTERVAL_DELTA_MAP
-)
+from strategies.sar_strategy import SarStrategy
 from datetime import datetime
-from pytz import timezone
 import os
+import pytz
+import sys
 
 
 def run(currency):
-    interval = Interval.HOUR
-    rate = 1.0 / 1000  # 手续费
-    capital = 200  # 起始资金
-
-    # SAR
-    setting = {
-        "class_name": "SarStrategy",
-        "seg_size": 90,  # 90个周期后开始交易 30时sar step准确只到8
-        "sar_acceleration": 0.02,
-        "sar_maximum": 0.2,
-        "rsi_length": 14,
-        "position_ratio": 100,  # 每次下100刀
-        "open_eq_sar_step": 7,
-        "open_lt_rsi": 0,  # [20, 1, 90] 0
-        "open_gt_ema": 0,  # [0, 1, 30] 2
-        "stop_eq_sar_step": 10,  # [1, 1, 10] 0
-        "stop_gt_rsi": 0,
-        "stop_lt_ema": 0,
-        "stop_gt_move": 0.0,  # [0.01, 0.01, 0.3] 0.22
-        "stop_win_per": 0.0,
-        "stop_loss_per": 0.0
+    symbol = "btcusdt"
+    eng_conf = {
+        "vt_symbol": "btcusdt.BINANCE",
+        "interval": "1h",
+        "start": "",
+        "end": "",
+        "rate": 0.001,
+        "slippage": 0.0,
+        "size": 1,
+        "pricetick": 0.01,
+        "capital": 200,
+        "mode": 1
     }
-
-    setting = {
+    setting_conf = {
         "class_name": "SarStrategy",
-        "seg_size": 200,  # 90个周期后开始交易 30时sar step准确只到8
+        "seg_size": 200,
         "sar_acceleration": 0.02,
         "sar_maximum": 0.2,
         "rsi_length": 14,
-        "position_ratio": 100,  # 每次下100刀
+        "position_ratio": 100,
         "open_eq_sar_step": 0,
-        "open_lt_rsi": 0,  # [20, 1, 90] 0
-        "open_gt_ema": 109,  # [0, 1, 30] 2
-        "stop_eq_sar_step": 0,  # [1, 1, 10] 0
+        "open_lt_rsi": 0,
+        "open_gt_ema": 105,
+        "stop_eq_sar_step": 0,
         "stop_gt_rsi": 0,
         "stop_lt_ema": 95,
-        "stop_gt_move": 0.0,  # [0.01, 0.01, 0.3] 0.22
-        "stop_win_per": 0.0,
-        "stop_loss_per": 0.0
+        "stop_gt_move": 0,
+        "stop_win_per": 0,
+        "stop_loss_per": 0
     }
-    engine = BacktestingEngineEx()
-    symbol = currency + "usdt"
 
+    interval = Interval(eng_conf["interval"])
+    engine = BacktestingEngineEx()
     overview = get_database().get_bar_overview()
     data = None
     for item in overview:
         if item.symbol == symbol.lower() and item.interval == interval:
             data = item
             break
-    # interval_delta = INTERVAL_DELTA_MAP[interval]
 
     start = data.start
-    # start = start.replace(year=2022, month=1, day=1)
+    if eng_conf["start"] != "":
+        start2 = datetime.strptime(eng_conf["start"], '%Y-%m-%d %H:%M:%S')
+        cn_zone = pytz.timezone('Asia/Shanghai')
+        start = cn_zone.localize(dt=start2)
 
     end = data.end
-    # 日要从8点开始
-    # start = datetime(2018, 9, 6, 8) - interval_delta * 30
-    # end = datetime(2017, 9, 20, 8)
-    # end = end.replace(year=2017, month=9, day=20)
+    if eng_conf["end"] != "":
+        end2 = datetime.strptime(eng_conf["end"], '%Y-%m-%d %H:%M:%S')
+        cn_zone = pytz.timezone('Asia/Shanghai')
+        end = cn_zone.localize(dt=end2)
 
     engine.set_parameters(
-        vt_symbol=symbol.lower() + ".BINANCE",
-        # vt_symbol="xmrusdt.BINANCE",  # 现货的数据
-        interval=interval,
+        vt_symbol=eng_conf["vt_symbol"],
+        interval=Interval(eng_conf["interval"]),
         start=start,
         end=end,
-        rate=rate,  # 币安手续费千分之1， BNB 万7.5  7.5/10000
-        slippage=0,
-        size=1,  # 币本位合约 100
-        pricetick=0.01,  # 价格精度.
-        capital=capital)
+        rate=eng_conf["rate"],
+        slippage=eng_conf["slippage"],
+        size=eng_conf["size"],
+        pricetick=eng_conf["pricetick"],
+        capital=eng_conf["capital"])
     engine.load_data()
 
-    engine.add_strategy(SarStrategy, setting)
+    engine.add_strategy(getattr(sys.modules[__name__], setting_conf["class_name"]), setting_conf)
     engine.run_backtesting()
 
     # engine.statistics_batch()
@@ -98,7 +86,7 @@ def run(currency):
     # engine.calculate_statistics()  # 计算一些统计指标
 
     # 区间推进统计
-    chart_path = "/home/data/docker-volume/nginx-php/html/www.tiham.com/cache/"
+    chart_path = "/usr/local/nginx/html/"
     def_stat, result_def_stat = engine.calculate_statistics_all(start,
                                                                 end,
                                                                 chart_path=chart_path)
@@ -137,6 +125,5 @@ def run(currency):
 
 if __name__ == '__main__':
     currency = ['btc']
-
     for ent in currency:
         run(ent)

@@ -19,7 +19,6 @@ pip install vnpy-mongodb==1.0.3
 pip install vnpy-rqdata==2.9.48.2
 pip install openpyxl==3.0.10
 pip install vnpy_sqlite
-pip install pytz
 
 
 

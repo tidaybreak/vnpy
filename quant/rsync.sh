@@ -17,8 +17,7 @@ rsync(){
       echo $exclude_list
     fi
 
-    /usr/bin/rsync -azp --delete --exclude-from="/home/ti/project/exclude.list" $exclude_list -e 'ssh -p 62738' $1 root@121.46.25.10:$2
-    #/usr/bin/rsync -azp --delete --exclude-from="/home/ti/project/exclude.list" $exclude_list -e 'ssh -p 51022' $1 root@$server:$2
+    /usr/bin/rsync -azp --delete --exclude-from="exclude.list" $exclude_list -e 'ssh -p 51022' $1 root@$server:$2
 
 }
 
