@@ -1,8 +1,8 @@
-yum install  gcc libffi-devel zlib* openssl-devel
+yum install -y gcc libffi-devel zlib* openssl-devel
 yum install -y xz-devel bzip2-devel
 
 cd Python-3.8.x
-./configure
+./configure --prefix=/usr/local/python-3.8.11
 make -j 30
 make install
 

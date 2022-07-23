@@ -96,6 +96,7 @@ class BaseStrategy(CtaTemplate):
         if isinstance(self.cta_engine, BacktestingEngine):
             self.available_cash = self.cta_engine.capital
         else:
+            self.cta_engine.interval = Interval(self.cta_engine.strategy_setting[strategy_name]["interval"])
             account_symbol1 = self.cta_engine.main_engine.engines["oms"].get_account("binance." + self.symbol1)
             # account_symbol1 = self.cta_engine.main_engine.query_account()
             # if account_symbol1:

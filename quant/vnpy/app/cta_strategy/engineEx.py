@@ -42,8 +42,11 @@ class CtaEngineEx(CtaEngine):
     1. time series container of bar data
     2. calculating technical indicator value
     """
+
     def __init__(self, main_engine: MainEngine, event_engine: EventEngine):
         super().__init__(main_engine, event_engine)
+        self.interval: Interval = None
+        self.rate: float = 0
 
     def load_bar2(
             self,
