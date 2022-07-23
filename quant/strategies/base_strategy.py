@@ -17,17 +17,13 @@ LOCAL_TZ = get_localzone()
 TIMER_WAITING_INTERVAL = 30
 
 
-class SarStrategy(CtaTemplate):
+class BaseStrategy(CtaTemplate):
     """基于sar 交易策略"""
-    className = 'SarStrategy'
-    author = u'ti'
-
     symbol1 = "USDT"
     symbol2 = ""
-    # interval = Interval.DAILY
+    am_count = 1000  # 正常越大越准
 
     # 参数-指标
-    seg_size = 100  # 初始化数据所用的天数
     sar_acceleration = 0.02  # 加速线
     sar_maximum = 0.2  #
     rsi_length = 14
@@ -59,8 +55,7 @@ class SarStrategy(CtaTemplate):
     open_buy_price = 0.0  # 买入价
 
     # 参数列表，保存了参数的名称
-    parameters = ['seg_size',
-                  'sar_acceleration',
+    parameters = ['sar_acceleration',
                   'sar_maximum',
                   'rsi_length',
                   'position_ratio',
@@ -96,17 +91,11 @@ class SarStrategy(CtaTemplate):
         self.no_log = setting.get('no_log', False)
 
         self.symbol2 = vt_symbol.split('.')[0].upper().replace(self.symbol1, "")
+        # 越大越准确
+        self.am = ArrayManagerEx(self.am_count)
         if isinstance(self.cta_engine, BacktestingEngine):
-            self.am = ArrayManagerEx(self.seg_size)
             self.available_cash = self.cta_engine.capital
         else:
-            if self.cta_engine.interval == Interval.MINUTE:
-                self.am = ArrayManagerEx(math.ceil(self.seg_size / 24 / 60) * 1440)
-            elif self.cta_engine.interval == Interval.HOUR:
-                self.am = ArrayManagerEx(math.ceil(self.seg_size / 24) * 24)
-            else:
-                self.am = ArrayManagerEx(self.seg_size * 24)
-
             account_symbol1 = self.cta_engine.main_engine.engines["oms"].get_account("binance." + self.symbol1)
             # account_symbol1 = self.cta_engine.main_engine.query_account()
             # if account_symbol1:
@@ -125,19 +114,25 @@ class SarStrategy(CtaTemplate):
         """初始化策略（必须由用户继承实现）"""
         self.my_log(u'策略初始化')
 
-        # 实盘模式时才会真正加载 载入历史数据，并采用回放计算的方式初始化策略数值
-        if self.cta_engine.interval == Interval.MINUTE:
-            # todo 当前分钟会触发2次 1次来自load_bar 一次来自on_tick
-            self.load_bar(math.ceil(self.seg_size / 24 / 60), Interval.MINUTE, use_database=False)
-        elif self.cta_engine.interval == Interval.HOUR:
-            self.load_bar(math.ceil(self.seg_size / 24), Interval.HOUR, use_database=False)
-        elif self.cta_engine.interval == Interval.DAILY:
-            # 加载小时是因为BarGenerator已经指定为小时24个窗口
-            self.load_bar(self.seg_size, Interval.HOUR, use_database=False)
+        # 实盘时才会真正加载 载入历史数据，并采用回放计算的方式初始化策略数值
+        # 回测时
+        if isinstance(self.cta_engine, BacktestingEngine):
+            # x天后触发
+            if self.cta_engine.interval == Interval.MINUTE:
+                self.load_bar(1, Interval.MINUTE, use_database=False)
+            elif self.cta_engine.interval == Interval.HOUR:
+                self.load_bar(1, Interval.HOUR, use_database=False)
+            elif self.cta_engine.interval == Interval.DAILY:
+                self.load_bar(74, Interval.HOUR, use_database=False)
         else:
-            self.load_bar(self.seg_size, self.cta_engine.interval, use_database=False)
-
-        # self.putEvent()
+            if self.cta_engine.interval == Interval.MINUTE:
+                # todo 当前分钟会触发2次 1次来自load_bar 一次来自on_tick
+                self.load_bar(math.ceil(self.am_count / 24 / 60), Interval.MINUTE, use_database=False)
+            elif self.cta_engine.interval == Interval.HOUR:
+                self.load_bar(math.ceil(self.am_count / 24), Interval.HOUR, use_database=False)
+            elif self.cta_engine.interval == Interval.DAILY:
+                # 加载小时是因为BarGenerator已经指定为小时24个窗口
+                self.load_bar(self.am_count, Interval.HOUR, use_database=False)
 
     def my_log(self, msg: str):
         if isinstance(self.cta_engine, BacktestingEngine):
@@ -213,8 +208,8 @@ class SarStrategy(CtaTemplate):
         # print("on_day_bar:", bar.datetime, " bar:", bar)
         self.am.update_bar(bar)
 
-        # if bar.datetime.year == 2022 and bar.datetime.month == 7 and bar.datetime.day == 20 and bar.datetime.hour == 9:
-        #    print("on_day_bar:", bar.datetime, " bar:", bar)
+        if bar.datetime.year == 2020 and bar.datetime.month == 9 and bar.datetime.day == 3:
+            print("on_day_bar:", bar.datetime, " bar:", bar)
 
         # 计算指标数值 - 过程指标，要在inited前执行
         self.sar_value = self.am.sar(self.sar_acceleration, self.sar_maximum)
@@ -233,8 +228,8 @@ class SarStrategy(CtaTemplate):
             self.sar_low_step += 1
             self.sar_high_step = 0
 
-        if not self.am.inited:
-            return
+        #if not self.am.inited:
+        #    return
 
         # 回测时self.days天内数据过滤 在run_backtesting内
         if not self.inited:

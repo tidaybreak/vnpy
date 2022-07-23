@@ -5,7 +5,7 @@ import pytz
 import json
 from strategies import *
 from vnpy.trader.object import Interval
-from strategies.sar_strategy import SarStrategy
+from strategies.strategy1 import Strategy1
 #from quant.vnpy.trader.engineEx import MainEngineEx
 from quant.units import get_symbol_overview, report_excel_xlsx
 from quant.vnpy.app.cta_strategy.backtestingEx import BacktestingEngineEx
@@ -77,7 +77,7 @@ if __name__ == '__main__':
         symbol = "btcusdt"
         eng_conf = {
             "vt_symbol": "btcusdt.BINANCE",
-            "interval": "1h",
+            "interval": "1d",
             "start": "2019-9-10 00:00:00",
             "end": "",
             "rate": 0.001,
@@ -88,8 +88,7 @@ if __name__ == '__main__':
             "mode": 1
         }
         setting_conf = {
-            "class_name": "SarStrategy",
-            "seg_size": 200,
+            "class_name": "Strategy1",
             "sar_acceleration": 0.02,
             "sar_maximum": 0.2,
             "rsi_length": 14,

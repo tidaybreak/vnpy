@@ -2,7 +2,7 @@ from quant.vnpy.app.cta_strategy.backtestingEx import BacktestingEngineEx
 from vnpy.trader.object import Interval
 from quant.units import report_excel_xlsx
 from vnpy.trader.database import get_database
-from strategies.sar_strategy import SarStrategy
+from strategies.strategy1 import Strategy1
 from datetime import datetime
 import os
 import pytz
@@ -25,8 +25,23 @@ def run(currency):
         "mode": 1
     }
     setting_conf = {
-        "class_name": "SarStrategy",
-        "seg_size": 200,
+        "class_name": "Strategy1",
+        "sar_acceleration": 0.02,
+        "sar_maximum": 0.2,
+        "rsi_length": 14,
+        "position_ratio": 100,
+        "open_eq_sar_step": 0,
+        "open_lt_rsi": 0,
+        "open_gt_ema": 75,
+        "stop_eq_sar_step": 0,
+        "stop_gt_rsi": 0,
+        "stop_lt_ema": 120,
+        "stop_gt_move": 0,
+        "stop_win_per": 0,
+        "stop_loss_per": 0
+    }
+    setting_conf = {
+        "class_name": "Strategy1",
         "sar_acceleration": 0.02,
         "sar_maximum": 0.2,
         "rsi_length": 14,
