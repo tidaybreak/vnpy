@@ -14,7 +14,7 @@ def run(currency):
     symbol = "btcusdt"
     eng_conf = {
         "vt_symbol": "btcusdt.BINANCE",
-        "interval": "1h",
+        "interval": "d",
         "start": "",
         "end": "",
         "rate": 0.001,
@@ -35,12 +35,12 @@ def run(currency):
         "open_gt_ema": 75,
         "stop_eq_sar_step": 0,
         "stop_gt_rsi": 0,
-        "stop_lt_ema": 120,
+        "stop_lt_ema": 130,
         "stop_gt_move": 0,
         "stop_win_per": 0,
         "stop_loss_per": 0
     }
-    setting_conf = {
+    setting_conf2 = {
         "class_name": "Strategy1",
         "sar_acceleration": 0.02,
         "sar_maximum": 0.2,
@@ -48,10 +48,10 @@ def run(currency):
         "position_ratio": 100,
         "open_eq_sar_step": 0,
         "open_lt_rsi": 0,
-        "open_gt_ema": 105,
+        "open_gt_ema": 180,
         "stop_eq_sar_step": 0,
         "stop_gt_rsi": 0,
-        "stop_lt_ema": 95,
+        "stop_lt_ema": 180,
         "stop_gt_move": 0,
         "stop_win_per": 0,
         "stop_loss_per": 0

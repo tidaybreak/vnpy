@@ -77,7 +77,7 @@ if __name__ == '__main__':
         symbol = "btcusdt"
         eng_conf = {
             "vt_symbol": "btcusdt.BINANCE",
-            "interval": "1d",
+            "interval": "d",
             "start": "2019-9-10 00:00:00",
             "end": "",
             "rate": 0.001,

@@ -208,8 +208,8 @@ class BaseStrategy(CtaTemplate):
         # print("on_day_bar:", bar.datetime, " bar:", bar)
         self.am.update_bar(bar)
 
-        if bar.datetime.year == 2020 and bar.datetime.month == 9 and bar.datetime.day == 3:
-            print("on_day_bar:", bar.datetime, " bar:", bar)
+        #if bar.datetime.year == 2020 and bar.datetime.month == 9 and bar.datetime.day == 3:
+        #    print("on_day_bar:", bar.datetime, " bar:", bar)
 
         # 计算指标数值 - 过程指标，要在inited前执行
         self.sar_value = self.am.sar(self.sar_acceleration, self.sar_maximum)
