@@ -39,7 +39,7 @@ def bool_color(condition, color='6495ED'):
     return ''
 
 
-def excel_xlsx_sheet(workbook, sheet_name, data):
+def excel_xlsx_sheet(workbook, sheet_name, data, style=True):
     index = len(data)
     sheet = workbook.create_sheet(sheet_name)
     # sheet = workbook.active
@@ -48,10 +48,10 @@ def excel_xlsx_sheet(workbook, sheet_name, data):
     for i in range(0, index):
         for j in range(0, len(data[i])):
             val = data[i][j]
-            if i == 0 and not isinstance(val, list):
+            if style and i == 0 and not isinstance(val, list):
                 val = [val, 'FFA500']
 
-            if isinstance(val, list) and len(val) > 1:
+            if style and isinstance(val, list) and len(val) > 1:
                 cell = sheet.cell(row=i + 1, column=j + 1, value=str(val[0]))
                 if val[1] != "":
                     fill_fg_color = PatternFill("solid", fgColor=val[1])
@@ -79,7 +79,19 @@ def report_excel_xlsx(save_file, data):
     workbook.remove_sheet(workbook.active)
 
     for ent in data:
-        excel_xlsx_sheet(workbook, ent[0], ent[1])
+        if isinstance(ent[1], dict):
+            values = []
+            for ent2 in ent[1]:
+                values += [[ent2, ent[1][ent2]]]
+            style = True
+            if len(ent) > 2:
+                style = ent[2]
+            excel_xlsx_sheet(workbook, ent[0], values, style)
+        else:
+            style = True
+            if len(ent) > 2:
+                style = ent[2]
+            excel_xlsx_sheet(workbook, ent[0], ent[1], style)
 
     workbook.save(save_file)
 

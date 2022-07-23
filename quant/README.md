@@ -21,6 +21,7 @@ pip install openpyxl==3.0.10
 pip install vnpy_sqlite
 pip install pytz
 
-
+pip install -U memory_profiler
+pip install psutil
 
 pip uninstall vnpy

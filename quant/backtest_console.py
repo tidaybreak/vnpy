@@ -7,6 +7,7 @@ from datetime import datetime
 import os
 import pytz
 import sys
+import json
 
 
 def run(currency):
@@ -91,36 +92,30 @@ def run(currency):
                                                                 end,
                                                                 chart_path=chart_path)
 
-    # 参数
-    str_parameter = []
-    parameters = [[['参数', 'FFA500', 20], '值']]
-    for attr in engine.strategy.parameters:
-        val = getattr(engine.strategy, attr)
-        parameters += [[attr, val]]
-        str_parameter.append(str(val))
-    str_parameter = " ".join(map(str, str_parameter))
-
     report = [["交易信息", engine.strategy.report_trade],
               ["信号", engine.strategy.report_signal],
-             # ["结束时间推进统计", result_end_time_stat],
-             # ["区间时间推进统计", result_move_time_stat],
+              # ["结束时间推进统计", result_end_time_stat],
+              # ["区间时间推进统计", result_move_time_stat],
               ["默认统计", result_def_stat],
-              ["参数", parameters]]
+              ["eng_conf", eng_conf, False],
+              ["setting_conf", setting_conf, False]]
 
-    # title_statistics = f"[{def_stat['总收益率']}_{def_stat['总成交次数']}_{def_stat['百分比最大回撤']}_{def_stat['胜率']}_{def_stat['盈亏比']}]"
+    # title_statistics = f"[{def_stat['总收益率']}_{def_stat['总成交次数']}_{def_stat['百分比最大回撤']}_{def_stat['胜率']}_{def_stat[
+    # '盈亏比']}]"
     title_statistics = ""
-    file_name = f"交易记录-{symbol}-{interval}-[{str_parameter}].xlsx"
+    start = start.strftime("%Y%m%d_%H%M%S")
+    end = end.strftime("%Y%m%d_%H%M%S")
+    file_name = f"backtest-{symbol}-{interval}-{start}-{end}.xlsx"
 
     save_file = "result/" + file_name
     if os.path.exists(save_file):
         os.remove(save_file)
     report_excel_xlsx(save_file, report)
 
+    print(json.dumps(setting_conf, indent=2))
     for ent in result_def_stat:
         print(f"{ent[0]}：\t{ent[1]}")
-
-    print(file_name)
-    print("overview:", data.symbol, data.interval, start, end)
+    print(save_file)
 
 
 if __name__ == '__main__':

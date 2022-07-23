@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import pytz
+import json
 from strategies import *
 from vnpy.trader.object import Interval
 from strategies.sar_strategy import SarStrategy
@@ -60,8 +61,11 @@ class ComplexEncoder(json.JSONEncoder):
 if __name__ == '__main__':
     config = dict()
     if len(sys.argv) > 1:
-        setting = sys.argv[1]
-        filename: str = f"optimization/{setting}.json"
+        title = sys.argv[1]
+        filename: str = f"optimization/{title}.json"
+        if not os.path.exists(f".vntrader/optimization/{title}.json"):
+            print("配置文件不存在：" + filename)
+            sys.exit(0)
         print("使用配置文件:", filename)
         config = load_json(filename)
         symbol = config["symbol"]
@@ -69,6 +73,7 @@ if __name__ == '__main__':
         setting_conf = config["setting"]
     else:
         print("使用默认配置")
+        title = ""
         symbol = "btcusdt"
         eng_conf = {
             "vt_symbol": "btcusdt.BINANCE",
@@ -91,10 +96,10 @@ if __name__ == '__main__':
             "position_ratio": 100,
             "open_eq_sar_step": 0,
             "open_lt_rsi": 0,  # [20, 1, 90]
-            "open_gt_ema": [50, 5, 200],  # [0, 1, 30]
+            "open_gt_ema": [100, 1, 103],  # [0, 1, 30]
             "stop_eq_sar_step": 0,  # [1, 1, 10]
             "stop_gt_rsi": 0,
-            "stop_lt_ema": [50, 5, 200],
+            "stop_lt_ema": 100,
             "stop_gt_move": 0,  # [0.01, 0.01, 0.3]
             "stop_win_per": 0,
             "stop_loss_per": 0
@@ -159,40 +164,35 @@ if __name__ == '__main__':
 
     print(json.dumps(setting_conf, cls=ComplexEncoder, sort_keys=False, indent=4, separators=(',', ':')))
 
+    report = [['优化值']]
+    setting_head = []
+    for k, v in result_values[0][0].items():
+        setting_head.append(k)
 
-    def calculate_result(result):
-        report = [['时间', '优化参数值']]
-        setting_head = []
-        for move_time, values in result.items():
-            for k, v in values[0][0].items():
-                if len(setting_head) != len(values[0][0]):
-                    setting_head.append(k)
-            for v in values:
-                setting = []
-                for k2, v2 in v[0].items():
-                    setting.append(v2)
-                    if len(setting_head) != len(v[0]):
-                        setting_head.append(k2)
+    for ent in result_values:
+        settings = []
+        for k, v in ent[0].items():
+            settings.append(v)
 
-                target_value = v[1]
-                statistics = v[2]
-                print([move_time, target_value] + setting + statistics[-8:])
-                report.append([move_time, target_value] + setting + statistics)
+        statistics = ent[1]
+        print(format(ent[2], '.2f'), settings, statistics[-8:])
+        report.append([ent[2]] + settings + statistics)
 
-        statistics_head = []
-        statistics_dict = engine.calculate_statistics_plus()
-        for k, v in statistics_dict.items():
-            statistics_head.append([k, "00FFFF"])
-        report[0] += setting_head + statistics_head
-        return report
+    statistics_head = []
+    statistics_dict = engine.calculate_statistics_plus()
+    for k, v in statistics_dict.items():
+        statistics_head.append([k, "00FFFF"])
+    report[0] += setting_head + statistics_head
 
-
-    report = calculate_result(result_values)
     # report2 = calculate_result(result_values["result_end_time_stat"])
 
-    file_name = f"参数优化-{symbol}-{interval}.xlsx"
+    start = start.strftime("%Y%m%d_%H%M%S")
+    end = end.strftime("%Y%m%d_%H%M%S")
+
+    file_name = f"optimization-{title}-{symbol}-{interval}-{result_values[0][2]}-{start}-{end}.xlsx"
     save_file = "result/" + file_name
     if os.path.exists(save_file):
         os.remove(save_file)
-    report_excel_xlsx(save_file, [["result", report]])
+    report_excel_xlsx(save_file, [["result", report], ["eng_conf", eng_conf, False], ["setting_conf", setting_conf, False]])
+    print(save_file)
     # report_excel_xlsx(save_file, [["区间时间推进统计", report1], ["结束时间推进统计", report2]])

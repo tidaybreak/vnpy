@@ -238,28 +238,21 @@ class BacktestingEngineEx(BacktestingEngine):
         pool.close()
         pool.join()
 
-        new_results = {
-
-        }
-
+        new_results = []
         for result in results:
             item = result.get()
-            key = item[0]
-            if key not in new_results:
-                new_results[key] = []
-            new_results[key].append((item[1], item[2], item[3]))
+            new_results.append((item[0], item[1], item[2]))
 
         # result_move_time_stat = []
-        for ent in new_results:
-            new_results[ent].sort(reverse=True, key=lambda result: result[1])
-            new_results[ent] = new_results[ent][:100]
+        new_results.sort(reverse=True, key=lambda result: result[2])
+        new_results = new_results[:100]
             # result_move_time_stat.append(new_results["result_move_time_stat"][ent][0])
 
         return new_results
 
         # Sort results and output
         result_values = [result.get() for result in results]
-        result_values.sort(reverse=True, key=lambda result: result[1])
+        result_values.sort(reverse=True, key=lambda result: result[2])
 
         end = datetime.now()
         print(start, end, end - start)
@@ -767,7 +760,9 @@ def optimizeEx(
     for ent in statistics_dict:
         values += [statistics_dict[ent]]
 
-    return ("key", setting, statistics_dict["总盈亏"], values)
+    del(setting["no_log"])
+    del(setting["class_name"])
+    return (setting, values, round(statistics_dict["总盈亏"], 2))
 
 
 
