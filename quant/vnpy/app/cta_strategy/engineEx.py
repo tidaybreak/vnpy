@@ -16,6 +16,7 @@ from vnpy.trader.constant import (
     Interval,
     Status
 )
+import copy
 from vnpy.trader.utility import extract_vt_symbol
 from vnpy.trader.database import get_database
 
@@ -25,6 +26,7 @@ from vnpy_ctastrategy.base import (
 )
 from vnpy_ctastrategy.template import CtaTemplate
 from time import sleep
+from vnpy.trader.utility import load_json, save_json, extract_vt_symbol, round_to
 
 STOP_STATUS_MAP = {
     Status.SUBMITTING: StopOrderStatus.WAITING,
@@ -48,7 +50,21 @@ class CtaEngineEx(CtaEngine):
         self.interval: Interval = None
         self.rate: float = 0
 
-    def load_bar2(
+    def update_strategy_setting(self, strategy_name: str, setting: dict) -> None:
+        """
+        Update setting file.
+        """
+        strategy: CtaTemplate = self.strategies[strategy_name]
+
+        self.strategy_setting[strategy_name] = {
+            "class_name": strategy.__class__.__name__,
+            "vt_symbol": strategy.vt_symbol,
+            "interval": self.strategy_setting[strategy_name]["interval"],
+            "setting": setting,
+        }
+        save_json(self.setting_filename, self.strategy_setting)
+
+    def load_bar(
             self,
             vt_symbol: str,
             days: int,
@@ -57,61 +73,38 @@ class CtaEngineEx(CtaEngine):
             use_database: bool
     ):
         """"""
+        # 实盘数据
+        """"""
+        # interval 限制为 Interval.HOUR or Interval.MINUTE
         bars = super().load_bar(vt_symbol, days, interval, callback, use_database)
-
-        # symbol, exchange = extract_vt_symbol(vt_symbol)
-        # #end: datetime = datetime.now(LOCAL_TZ)
-        # end = datetime.now(get_localzone())
-        # start = end - timedelta(days)
-        # # ti 0点触发
-        # start = start.replace(hour=8, minute=0, second=0, microsecond=0)
-        # bars = []
-        #
-        # # Pass gateway and RQData if use_database set to True
-        # if not use_database:
-        #     # Query bars from gateway if available
-        #     contract = self.main_engine.get_contract(vt_symbol)
-        #
-        #     if contract and contract.history_data:
-        #         req = HistoryRequest(
-        #             symbol=symbol,
-        #             exchange=exchange,
-        #             interval=interval,
-        #             start=start,  # ti 8点开始，binance 1分钟合成日数据和直接获取的日数据对应的上
-        #             end=end
-        #         )
-        #         bars = self.main_engine.query_history(req, contract.gateway_name)
-        #
-        #     # Try to query bars from RQData, if not found, load from database.
-        #     else:
-        #         bars = self.query_bar_from_rq(symbol, exchange, interval, start, end)
-        #
-        # if not bars:
-        #     bars = get_database().load_bar_data(
-        #         symbol=symbol,
-        #         exchange=exchange,
-        #         interval=interval,
-        #         start=start,
-        #         end=end,
-        #     )
-
+        new_bars = []
         # ti 缺失bar处理，保持时间连续
         tmp_bar = None
+        miss_count = 0
         interval_delta = INTERVAL_DELTA_MAP[interval]
         for bar in bars:
+            # 如果是日交易，从第一个0点开始
+            if self.interval == Interval.DAILY and len(new_bars) == 0 and bar.datetime.hour != 0:
+                continue
             if tmp_bar and tmp_bar.datetime + interval_delta != bar.datetime:
-                self.write_log(f"bar missing start:{tmp_bar} ",)
                 tmp_bar.volume = 0
                 while True:
+                    tmp_bar.datetime += interval_delta
                     if tmp_bar.datetime == bar.datetime:
                         break
-                    tmp_bar.datetime += interval_delta
-                    #callback(tmp_bar)
+                    new_bars.append(copy.deepcopy(tmp_bar))
+                    miss_count += 1
+                    # self.write_log(f"bar missing start:{tmp_bar} ")
             tmp_bar = bar
-            # if bar.datetime.day == 11 and bar.datetime.hour == 7 and bar.datetime.minute == 59:
-            #     tmp_bar = bar
-            #callback(bar)
-        return bars
+            new_bars.append(bar)
+
+            # callback(bar)
+        bar_total = len(bars)
+        self.write_log(f"加载周期{interval} 加载天数{days} 获取总数:{bar_total} 丢失数量:{miss_count} ")
+        # for bar in new_bars:
+        #     if bar.datetime.year == 2019 and bar.datetime.month == 11:
+        #         print(bar)
+        return new_bars
 
     def start_all_strategies(self) -> None:
         """

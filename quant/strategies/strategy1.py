@@ -8,7 +8,7 @@ class Strategy1(BaseStrategy):
         # print("on_day_bar:", bar.datetime, " bar:", bar)
         self.am.update_bar(bar)
 
-        #if bar.datetime.year == 2020 and bar.datetime.month == 9 and bar.datetime.day == 3:
+        # if bar.datetime.year == 2019 and bar.datetime.month == 11 and bar.datetime.day == 14:
         #    print("on_day_bar:", bar.datetime, " bar:", bar)
 
         # 计算指标数值 - 过程指标，要在inited前执行
@@ -28,10 +28,10 @@ class Strategy1(BaseStrategy):
             self.sar_low_step += 1
             self.sar_high_step = 0
 
-        #if not self.am.inited:
+        # if not self.am.inited:
         #    return
 
-        # 回测时self.days天内数据过滤 在run_backtesting内
+        # 回测时self.days天内数据过滤（在run_backtesting内） 实盘时初始化后
         if not self.inited:
             return
 

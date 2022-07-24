@@ -90,11 +90,12 @@ def run_child(currency):
     loaded_setting = load_json(filename)
     main_engine.connect(loaded_setting, gateway_name)
 
+    account_symbol1 = main_engine.engines["oms"].get_account("binance.USDT")
+
     # main_engine.write_log("sleep10等待connect连接")
     # sleep(10)
-    vt_symbol = currency
-    cta_engine.setting_filename = f"cta_strategy_setting_{vt_symbol}.json"
-    cta_engine.data_filename = f"cta_strategy_data_{vt_symbol}.json"
+    cta_engine.setting_filename = f"cta_strategy_setting_{currency}.json"
+    cta_engine.data_filename = f"cta_strategy_data_{currency}.json"
     cta_engine.init_engine()
     main_engine.write_log("CTA策略初始化完成")
 

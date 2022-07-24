@@ -10,7 +10,7 @@ import sys
 import json
 
 
-def run(currency):
+def run():
     symbol = "btcusdt"
     eng_conf = {
         "vt_symbol": "btcusdt.BINANCE",
@@ -102,7 +102,8 @@ def run(currency):
     # engine.calculate_statistics()  # 计算一些统计指标
 
     # 区间推进统计
-    chart_path = "/usr/local/nginx/html/"
+    # chart_path = "./result/"
+    chart_path = os.environ.get('CHART_PATH', "./result/")
     def_stat, result_def_stat = engine.calculate_statistics_all(start,
                                                                 end,
                                                                 chart_path=chart_path)
@@ -130,10 +131,9 @@ def run(currency):
     print(json.dumps(setting_conf, indent=2))
     for ent in result_def_stat:
         print(f"{ent[0]}：\t{ent[1]}")
+    print(os.environ.get('CHART_PATH', "./result/"))
     print(save_file)
 
 
 if __name__ == '__main__':
-    currency = ['btc']
-    for ent in currency:
-        run(ent)
+    run()

@@ -7,9 +7,10 @@ cd $real_path
 
 export PYTHONPATH=$PYTHONPATH:$real_path"/.."
 export PYTHONPATH=$PYTHONPATH:$real_path"/../.."
+echo "export PYTHONPATH="$PYTHONPATH
 #cd quant
 
-#python download_data.py
+python download_data.py
 #python backtest_console.py
-python optimization_console.py
+#python optimization_console.py
 #python main_console.py $*
