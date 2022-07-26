@@ -40,7 +40,21 @@ def run():
         "stop_win_per": 0,
         "stop_loss_per": 0
     }
-    setting_conf2 = {
+
+    symbol = "000001"
+    eng_conf = {
+        "vt_symbol": "000001.SSE",
+        "interval": "1h",
+        "start": "",
+        "end": "",
+        "rate": 0.001,
+        "slippage": 0.0,
+        "size": 1,
+        "pricetick": 0.01,
+        "capital": 200,
+        "mode": 1
+    }
+    setting_conf = {
         "class_name": "Strategy1",
         "sar_acceleration": 0.02,
         "sar_maximum": 0.2,
@@ -48,10 +62,10 @@ def run():
         "position_ratio": 100,
         "open_eq_sar_step": 0,
         "open_lt_rsi": 0,
-        "open_gt_ema": 180,
+        "open_gt_ema": 95,
         "stop_eq_sar_step": 0,
         "stop_gt_rsi": 0,
-        "stop_lt_ema": 180,
+        "stop_lt_ema": 80,
         "stop_gt_move": 0,
         "stop_win_per": 0,
         "stop_loss_per": 0

@@ -77,6 +77,9 @@ class CtaEngineEx(CtaEngine):
         """"""
         # interval 限制为 Interval.HOUR or Interval.MINUTE
         bars = super().load_bar(vt_symbol, days, interval, callback, use_database)
+
+        # todo 24小时交易才处理
+
         new_bars = []
         # ti 缺失bar处理，保持时间连续
         tmp_bar = None

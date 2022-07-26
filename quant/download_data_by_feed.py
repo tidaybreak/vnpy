@@ -103,12 +103,17 @@ def download_spot(exchange, symbol, first_date, interval):
             bar_overview = ent
             break
 
+    start_time = int(datetime.strptime(first_date, '%Y-%m-%d').timestamp())  # 开盘时间
     if bar_overview:
         print("overview:", bar_overview.symbol, bar_overview.interval, bar_overview.start, bar_overview.end)
         start_time = int(time.mktime(bar_overview.end.timetuple()))
-    else:
-        start_time = int(datetime.strptime(first_date, '%Y-%m-%d').timestamp())  # 开盘时间
+        # if start_time < bar_start_time:
+        #     start_time = bar_start_time
+
     end_time = int(time.time()) - (int(time.time()) - time.timezone) % 86400
+
+    if start_time > end_time:
+        return
 
     while start_time < end_time:
         d = datetime.fromtimestamp(start_time)
@@ -133,7 +138,7 @@ if __name__ == '__main__':
     #data = [["300738", Interval.HOUR], ["300738", Interval.DAILY]]
     data = [[Exchange.SZSE, "300738", "2018-1-1", Interval.DAILY], [Exchange.SZSE, "300738", "2018-1-1", Interval.HOUR]]    # 奥飞
     data = [[Exchange.SSE, "000001", "2018-1-1", Interval.DAILY], [Exchange.SSE, "000001", "2018-1-1", Interval.HOUR]]   # 上证
-    data = [[Exchange.SSE, "510100", "2018-1-1", Interval.DAILY], [Exchange.SSE, "510100", "2018-1-1", Interval.HOUR]]   # SZ50ETF
+    data = [[Exchange.SSE, "510100", "2020-1-1", Interval.DAILY], [Exchange.SSE, "510100", "2020-1-1", Interval.HOUR]]   # SZ50ETF
     for item in data:
         download_spot(item[0], item[1], item[2], item[3])  # 下载现货的数据.
 

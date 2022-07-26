@@ -19,8 +19,8 @@ TIMER_WAITING_INTERVAL = 30
 
 class BaseStrategy(CtaTemplate):
     """基于sar 交易策略"""
-    symbol1 = "USDT"
-    symbol2 = ""
+    symbol1 = "USDT"    # 实盘用到
+    symbol2 = ""        # 实盘用到
     am_count = 1000  # 正常越大越准
 
     # 参数-指标
@@ -86,8 +86,6 @@ class BaseStrategy(CtaTemplate):
             if k in setting:
                 setattr(self, k, setting[k])
 
-        if "symbol1" in setting:
-            self.symbol1 = setting["symbol1"]
         self.no_log = setting.get('no_log', False)
 
         self.symbol2 = vt_symbol.split('.')[0].upper().replace(self.symbol1, "")
