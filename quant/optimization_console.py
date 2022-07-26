@@ -171,6 +171,8 @@ if __name__ == '__main__':
     for ent in result_values:
         settings = []
         for k, v in ent[0].items():
+            if isinstance(v, float):
+                v = format(v, '.4f')
             settings.append(v)
 
         statistics = ent[1]

@@ -88,7 +88,7 @@ class Strategy1(BaseStrategy):
                 self.close_price_max = max(self.close_price_max, bar.close_price)
                 stop_gt_move_price = self.close_price_max * (1 - self.stop_gt_move)
                 stop_win_price = self.open_buy_price * (1 + self.stop_win_per)
-                stop_loss_price = self.open_buy_price * (1 + self.stop_loss_per)
+                stop_loss_price = self.open_buy_price * (1 - self.stop_loss_per)
 
                 # 卖出条件：sar向下拐点 或 到达移动止损
                 b_close_sar = False

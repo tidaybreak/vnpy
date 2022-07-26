@@ -14,36 +14,6 @@ def run():
     symbol = "btcusdt"
     eng_conf = {
         "vt_symbol": "btcusdt.BINANCE",
-        "interval": "d",
-        "start": "",
-        "end": "",
-        "rate": 0.001,
-        "slippage": 0.0,
-        "size": 1,
-        "pricetick": 0.01,
-        "capital": 200,
-        "mode": 1
-    }
-    setting_conf = {
-        "class_name": "Strategy1",
-        "sar_acceleration": 0.02,
-        "sar_maximum": 0.2,
-        "rsi_length": 14,
-        "position_ratio": 100,
-        "open_eq_sar_step": 0,
-        "open_lt_rsi": 0,
-        "open_gt_ema": 75,
-        "stop_eq_sar_step": 0,
-        "stop_gt_rsi": 0,
-        "stop_lt_ema": 130,
-        "stop_gt_move": 0,
-        "stop_win_per": 0,
-        "stop_loss_per": 0
-    }
-
-    symbol = "000001"
-    eng_conf = {
-        "vt_symbol": "000001.SSE",
         "interval": "1h",
         "start": "",
         "end": "",
@@ -62,14 +32,44 @@ def run():
         "position_ratio": 100,
         "open_eq_sar_step": 0,
         "open_lt_rsi": 0,
-        "open_gt_ema": 95,
+        "open_gt_ema": 180,
         "stop_eq_sar_step": 0,
         "stop_gt_rsi": 0,
-        "stop_lt_ema": 80,
+        "stop_lt_ema": 0,
         "stop_gt_move": 0,
-        "stop_win_per": 0,
-        "stop_loss_per": 0
+        "stop_win_per": 0.1,
+        "stop_loss_per": 0.04
     }
+
+    # symbol = "000001"
+    # eng_conf = {
+    #     "vt_symbol": "000001.SSE",
+    #     "interval": "1h",
+    #     "start": "",
+    #     "end": "",
+    #     "rate": 0.001,
+    #     "slippage": 0.0,
+    #     "size": 1,
+    #     "pricetick": 0.01,
+    #     "capital": 200,
+    #     "mode": 1
+    # }
+    # setting_conf = {
+    #     "class_name": "Strategy1",
+    #     "sar_acceleration": 0.02,
+    #     "sar_maximum": 0.2,
+    #     "rsi_length": 14,
+    #     "position_ratio": 100,
+    #     "open_eq_sar_step": 0,
+    #     "open_lt_rsi": 0,
+    #     "open_gt_ema": 95,
+    #     "stop_eq_sar_step": 0,
+    #     "stop_gt_rsi": 0,
+    #     "stop_lt_ema": 80,
+    #     "stop_gt_move": 0,
+    #     "stop_win_per": 0,
+    #     "stop_loss_per": 0
+    # }
 
     interval = Interval(eng_conf["interval"])
     engine = BacktestingEngineEx()

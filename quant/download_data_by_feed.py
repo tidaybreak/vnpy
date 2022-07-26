@@ -138,7 +138,7 @@ if __name__ == '__main__':
     #data = [["300738", Interval.HOUR], ["300738", Interval.DAILY]]
     data = [[Exchange.SZSE, "300738", "2018-1-1", Interval.DAILY], [Exchange.SZSE, "300738", "2018-1-1", Interval.HOUR]]    # 奥飞
     data = [[Exchange.SSE, "000001", "2018-1-1", Interval.DAILY], [Exchange.SSE, "000001", "2018-1-1", Interval.HOUR]]   # 上证
-    data = [[Exchange.SSE, "510100", "2020-1-1", Interval.DAILY], [Exchange.SSE, "510100", "2020-1-1", Interval.HOUR]]   # SZ50ETF
+    data = [[Exchange.SSE, "510100", "2020-1-1", Interval.DAILY], [Exchange.SSE, "510100", "2020-1-1", Interval.HOUR], [Exchange.SSE, "510100", "2020-1-1", Interval.MINUTE]]   # SZ50ETF
     for item in data:
         download_spot(item[0], item[1], item[2], item[3])  # 下载现货的数据.
 
