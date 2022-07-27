@@ -32,13 +32,13 @@ def run():
         "position_ratio": 100,
         "open_eq_sar_step": 0,
         "open_lt_rsi": 0,
-        "open_gt_ema": 180,
+        "open_gt_ema": 172,
         "stop_eq_sar_step": 0,
         "stop_gt_rsi": 0,
         "stop_lt_ema": 0,
-        "stop_gt_move": 0,
-        "stop_win_per": 0.1,
-        "stop_loss_per": 0.04
+        "stop_gt_move": 0.09,
+        "stop_win_per": 0,
+        "stop_loss_per": 0.03
     }
 
     # symbol = "000001"

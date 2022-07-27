@@ -44,11 +44,11 @@ class Strategy1(BaseStrategy):
         # 计算指标数值
         self.rsi_value = self.am.rsi(self.rsi_length)
 
-        # self.my_log(f"{bar.datetime} [cash:{self.my_available_cash()} pos:{self.my_pos()}] "
-        #             f"[open:{bar.open_price} close:{bar.close_price} high:{bar.high_price} low:{bar.low_price} volume:{bar.volume}] "
-        #             f"[sar_value:{self.sar_value} sar_high_step:{self.sar_high_step} sar_low_step:{self.sar_low_step}]"
-        #             f"[rsi_value:{self.rsi_value} {self.sar_angle}]  "
-        #             f"[close_price_max:{self.close_price_max} open_buy_price:{self.open_buy_price}]  ")
+        self.my_log(f"{bar.datetime} [cash:{self.my_available_cash()} pos:{self.my_pos()}] "
+                    f"[open:{bar.open_price} close:{bar.close_price} high:{bar.high_price} low:{bar.low_price} volume:{bar.volume}] "
+                    f"[sar_value:{self.sar_value} sar_high_step:{self.sar_high_step} sar_low_step:{self.sar_low_step}]"
+                    f"[rsi_value:{self.rsi_value} {self.sar_angle}]  "
+                    f"[close_price_max:{self.close_price_max} open_buy_price:{self.open_buy_price}]  ")
 
         # 开仓信号
         open_signal = False

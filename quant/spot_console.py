@@ -75,12 +75,9 @@ def run_child(currency):
 
     main_engine = MainEngineEx(event_engine)
 
-    main_engine.add_gateway(BinanceSpotGateway, gateway_name=gateway_name)
-    # gateway = main_engine.add_gateway(BinanceUsdtGateway)
-    # gateway = main_engine.add_gateway(BinanceInverseGateway)
+    main_engine.add_gateway(BinanceSpotGatewayEx, gateway_name=gateway_name)
 
     cta_engine = main_engine.add_app(CtaStrategyAppEx)
-    # main_engine.add_app(CtaStrategyAppEx)
 
     log_engine = main_engine.get_engine("log")
     event_engine.register(EVENT_CTA_LOG, log_engine.process_log_event)
@@ -90,10 +87,13 @@ def run_child(currency):
     loaded_setting = load_json(filename)
     main_engine.connect(loaded_setting, gateway_name)
 
-    account_symbol1 = main_engine.engines["oms"].get_account("binance.USDT")
+    # 等待连接完成
+    while True:
+        account_symbol1 = main_engine.engines["oms"].get_account("binance.USDT")
+        if account_symbol1 is not None:
+            break
+        sleep(1)
 
-    # main_engine.write_log("sleep10等待connect连接")
-    # sleep(10)
     cta_engine.setting_filename = f"cta_strategy_setting_{currency}.json"
     cta_engine.data_filename = f"cta_strategy_data_{currency}.json"
     cta_engine.init_engine()
