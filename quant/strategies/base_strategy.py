@@ -96,6 +96,7 @@ class BaseStrategy(CtaTemplate):
         else:
             self.cta_engine.interval = Interval(self.cta_engine.strategy_setting[strategy_name]["interval"])
             account_symbol1 = self.cta_engine.main_engine.engines["oms"].get_account("binance." + self.symbol1)
+            account_symbol2 = self.cta_engine.main_engine.engines["oms"].get_account("binance." + self.symbol2)
             # account_symbol1 = self.cta_engine.main_engine.query_account()
             # if account_symbol1:
             self.available_cash = account_symbol1.available
@@ -110,6 +111,10 @@ class BaseStrategy(CtaTemplate):
                 #self.bg.interval_count = 24 - (24 - hour + 8 - 1)
 
     def on_init(self):
+        # self.trading = True
+        # result = self.buy(10000, 0.00468)
+        # self.trading = False
+
         """初始化策略（必须由用户继承实现）"""
         self.my_log(u'策略初始化')
 
@@ -145,7 +150,7 @@ class BaseStrategy(CtaTemplate):
             return self.pos
         else:
             account_symbol2 = self.cta_engine.main_engine.engines["oms"].get_account("binance." + self.symbol2)
-            # 币安每余额返回None
+            # 币安没余额返回None
             if account_symbol2:
                 if not bar or bar.close_price * account_symbol2.available > 20:
                     return account_symbol2.available

@@ -47,7 +47,7 @@ class Strategy1(BaseStrategy):
         self.my_log(f"{bar.datetime} [cash:{self.my_available_cash()} pos:{self.my_pos()}] "
                     f"[open:{bar.open_price} close:{bar.close_price} high:{bar.high_price} low:{bar.low_price} volume:{bar.volume}] "
                     f"[sar_value:{self.sar_value} sar_high_step:{self.sar_high_step} sar_low_step:{self.sar_low_step}]"
-                    f"[rsi_value:{self.rsi_value} {self.sar_angle}]  "
+                    f"[rsi_value:{self.rsi_value} ]  "
                     f"[close_price_max:{self.close_price_max} open_buy_price:{self.open_buy_price}]  ")
 
         # 开仓信号
