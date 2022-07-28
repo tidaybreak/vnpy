@@ -25,6 +25,7 @@ def run():
         "mode": 1
     }
     setting_conf = {
+        "no_log": True,
         "class_name": "Strategy1",
         "sar_acceleration": 0.02,
         "sar_maximum": 0.2,

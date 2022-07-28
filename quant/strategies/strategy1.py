@@ -20,8 +20,6 @@ class Strategy1(BaseStrategy):
             self.sar_low_step = 0
             if self.sar_high_step == 1:
                 self.sar_first_price = self.sar_value
-            #elif self.sar_high_step == 5:
-            #    self.sar_angle = self.sar_value - self.sar_first_price
         else:
             if self.sar_low_step == 0:
                 self.sar_switch_amount += 1
@@ -44,20 +42,24 @@ class Strategy1(BaseStrategy):
         # 计算指标数值
         self.rsi_value = self.am.rsi(self.rsi_length)
 
+        open_ema = 0
+        if self.open_gt_ema > 1:
+            open_ema = self.am.ema(self.open_gt_ema)
+
         self.my_log(f"{bar.datetime} [cash:{self.my_available_cash()} pos:{self.my_pos()}] "
                     f"[open:{bar.open_price} close:{bar.close_price} high:{bar.high_price} low:{bar.low_price} volume:{bar.volume}] "
                     f"[sar_value:{self.sar_value} sar_high_step:{self.sar_high_step} sar_low_step:{self.sar_low_step}]"
                     f"[rsi_value:{self.rsi_value} ]  "
+                    f"[open_ema:{open_ema} ]  "
                     f"[close_price_max:{self.close_price_max} open_buy_price:{self.open_buy_price}]  ")
+
+        b_open_sar = self.open_eq_sar_step == 0 or self.sar_high_step == self.open_eq_sar_step
+        b_open_rsi = self.open_lt_rsi == 0 or self.rsi_value <= self.open_lt_rsi
+        # 这里防止实盘时重复下单
+        b_open_ema = self.open_gt_ema <= 1 or (bar.close_price > open_ema > self.am.close_array[-2])
 
         # 开仓信号
         open_signal = False
-        open_ema = 0
-        if self.open_gt_ema > 1:
-            open_ema = self.am.ema(self.open_gt_ema)
-        b_open_sar = self.open_eq_sar_step == 0 or self.sar_high_step == self.open_eq_sar_step
-        b_open_rsi = self.open_lt_rsi == 0 or self.rsi_value <= self.open_lt_rsi
-        b_open_ema = self.open_gt_ema <= 1 or bar.close_price > open_ema
         if (b_open_sar and
                 b_open_rsi and
                 b_open_ema):
@@ -98,7 +100,8 @@ class Strategy1(BaseStrategy):
 
                 b_close_move = self.stop_gt_move > 0.0 and bar.close_price < stop_gt_move_price
                 b_close_rsi = 0.0 < self.stop_gt_rsi <= self.rsi_value
-                b_close_ema = self.stop_lt_ema > 0 and bar.close_price < close_ema
+                # 这里防止实盘时重复下单
+                b_close_ema = self.stop_lt_ema > 0 and (bar.close_price < close_ema < self.am.close_array[-2])
                 b_close_win_per = self.stop_win_per > 0.0 and bar.close_price >= stop_win_price
                 b_close_loss_per = self.stop_loss_per > 0.0 and bar.close_price <= stop_loss_price
                 if b_close_sar or \
