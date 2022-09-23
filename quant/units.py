@@ -65,7 +65,7 @@ def excel_xlsx_sheet(workbook, sheet_name, data, style=True):
         #         sheet['F' + str(i + 1)].fill = fill_fg_green
     for i in range(1, sheet.max_column+1):
         width = 10
-        if len(data[0]) > i and isinstance(data[0][i-1], list) and len(data[0][i-1]) > 2:
+        if len(data) > 0 and len(data[0]) > i and isinstance(data[0][i-1], list) and len(data[0][i-1]) > 2:
             width = data[0][i-1][2]
         sheet.column_dimensions[get_column_letter(i)].width = width
     sheet.freeze_panes = sheet['B2']

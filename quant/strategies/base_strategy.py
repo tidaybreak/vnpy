@@ -46,10 +46,9 @@ class BaseStrategy(CtaTemplate):
     sar_low_step = 0  # sar 下行时步数
     sar_first_price = 0
     sar_total_price = 0
-    rsi_value = 0  # rsi指标数值
+
     available_cash = 0  # 可用现金
     no_log = False
-    open_tmp_bar = None
     # 内部变量 - 需要恢复
     close_price_max = 0.0  # 买入后历史最高价
     open_buy_price = 0.0  # 买入价
@@ -70,8 +69,7 @@ class BaseStrategy(CtaTemplate):
                   'stop_loss_per']
 
     # 变量列表，保存了变量的名称
-    variables = ['close_price_max',
-                 'open_buy_price']
+    variables = []
 
     # 交易详情
     report_trade = []
@@ -246,12 +244,12 @@ class BaseStrategy(CtaTemplate):
         # self.keltnerup, self.keltnerdown = self.am.keltner(self.keltnerWindow, self.keltnerlMultiplier)
 
         # 计算指标数值
-        self.rsi_value = self.am.rsi(self.rsi_length)
+        rsi_value = self.am.rsi(self.rsi_length)
 
         # self.my_log(f"{bar.datetime} [cash:{self.my_available_cash()} pos:{self.my_pos()}] "
         #             f"[open:{bar.open_price} close:{bar.close_price} high:{bar.high_price} low:{bar.low_price} volume:{bar.volume}] "
         #             f"[sar_value:{self.sar_value} sar_high_step:{self.sar_high_step} sar_low_step:{self.sar_low_step}]"
-        #             f"[rsi_value:{self.rsi_value} {self.sar_angle}]  "
+        #             f"[rsi_value:{rsi_value} {self.sar_angle}]  "
         #             f"[close_price_max:{self.close_price_max} open_buy_price:{self.open_buy_price}]  ")
 
         # 开仓信号
@@ -260,14 +258,14 @@ class BaseStrategy(CtaTemplate):
         if self.open_gt_ema > 1:
             open_ema = self.am.ema(self.open_gt_ema)
         b_open_sar = self.open_eq_sar_step == 0 or self.sar_high_step == self.open_eq_sar_step
-        b_open_rsi = self.open_lt_rsi == 0 or self.rsi_value <= self.open_lt_rsi
+        b_open_rsi = self.open_lt_rsi == 0 or rsi_value <= self.open_lt_rsi
         b_open_ema = self.open_gt_ema <= 1 or bar.close_price > open_ema
         if (b_open_sar and
                 b_open_rsi and
                 b_open_ema):
             open_signal = True
             self.trade_info['open_sar'] = self.sar_high_step #[self.sar_high_step, bool_color(b_open_sar)]
-            self.trade_info['open_rsi'] = [round(self.rsi_value, 2), bool_color(b_open_rsi)]
+            self.trade_info['open_rsi'] = [round(rsi_value, 2), bool_color(b_open_rsi)]
             self.trade_info['open_em'] = [round(open_ema, 2), bool_color(b_open_ema)]
             self.report_signal_data(bar, 'open')
 
@@ -301,7 +299,7 @@ class BaseStrategy(CtaTemplate):
                         b_close_sar = True
 
                 b_close_move = self.stop_gt_move > 0.0 and bar.close_price < stop_gt_move_price
-                b_close_rsi = 0.0 < self.stop_gt_rsi <= self.rsi_value
+                b_close_rsi = 0.0 < self.stop_gt_rsi <= rsi_value
                 b_close_ema = self.stop_lt_ema > 0 and bar.close_price < close_ema
                 b_close_win_per = self.stop_win_per > 0.0 and bar.close_price >= stop_win_price
                 b_close_loss_per = self.stop_loss_per > 0.0 and bar.close_price <= stop_loss_price
@@ -314,7 +312,7 @@ class BaseStrategy(CtaTemplate):
                     self.sell(bar.close_price, abs(self.pos))
                     self.trade_info['close_sar'] = [self.sar_low_step, bool_color(b_close_sar)]
                     self.trade_info['close_move'] = [round(stop_gt_move_price, 2), bool_color(b_close_move)]
-                    self.trade_info['close_rsi'] = [round(self.rsi_value, 2), bool_color(b_close_rsi)]
+                    self.trade_info['close_rsi'] = [round(rsi_value, 2), bool_color(b_close_rsi)]
                     self.trade_info['close_ema'] = [round(close_ema, 2), bool_color(b_close_ema)]
                     self.trade_info['stop_win_per'] = [round(stop_win_price, 2), bool_color(b_close_win_per)]
                     self.trade_info['stop_loss_per'] = [round(stop_loss_price, 2), bool_color(b_close_loss_per)]
@@ -330,10 +328,7 @@ class BaseStrategy(CtaTemplate):
         # 发出状态更新事件
         if trade.direction == Direction.LONG:
             self.available_cash -= (trade.price * trade.volume) * (1.0 + self.cta_engine.rate)
-            self.open_buy_price = trade.price
-            if self.open_tmp_bar:
-                self.close_price_max = self.open_tmp_bar.high_price
-                self.open_tmp_bar = None
+            #self.open_buy_price = trade.price
             self.trade_info['open_trade_time'] = trade.datetime
             # print(f"on_trade long datetime:{trade.datetime} price:{trade.price} ")
             # self.my_log(f"on_trade long datetime:{trade.datetime} price:{trade.price} ")
@@ -341,8 +336,8 @@ class BaseStrategy(CtaTemplate):
             self.available_cash += (trade.price * trade.volume) * (1.0 - self.cta_engine.rate)
             self.trade_info['available_cash_max'] = max(self.available_cash, self.trade_info.get('available_cash_max', 0))
             self.report_trade_data(trade)
-            self.close_price_max = 0
-            self.open_buy_price = 0
+            #self.close_price_max = 0
+            #self.open_buy_price = 0
             # self.my_log(f"on_trade short datetime:{trade.datetime} price:{trade.price} ")
         self.sync_data()
         self.put_event()
